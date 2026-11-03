@@ -16,7 +16,7 @@ object CategoryLocalization {
     fun getLocalizedName(defaultName: String, requestedLocale: String? = null): String {
         val categoryMap = translations[defaultName] ?: return defaultName
         val targetLocale = requestedLocale?.takeIf { it.isNotBlank() && it != "system" }
-            ?: Locale.getDefault().toLanguageTag()
+            ?: DateFormatter.getEffectiveLocale().toLanguageTag()
 
         // 1. Exact match (e.g. "zh-CN", "fr-FR", "de-DE")
         categoryMap[targetLocale]?.let { return it }

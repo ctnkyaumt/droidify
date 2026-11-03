@@ -20,7 +20,6 @@ import com.looker.droidify.datastore.model.ProxyType
 import com.looker.droidify.datastore.model.SortOrder
 import com.looker.droidify.datastore.model.StartupTab
 import com.looker.droidify.datastore.model.Theme
-import com.looker.droidify.utility.AnimationHelper
 import com.looker.droidify.utility.DateFormatter
 import com.looker.droidify.utility.common.Exporter
 import com.looker.droidify.utility.common.extension.updateAsMutable
@@ -274,7 +273,6 @@ class PreferenceSettingsRepository(
         val favouriteApps = preferences[FAVOURITE_APPS] ?: emptySet()
         val homeScreenSwiping = preferences[HOME_SCREEN_SWIPING] ?: true
         val reduceAnimations = preferences[REDUCE_ANIMATIONS] ?: false
-        AnimationHelper.reduceAnimations = reduceAnimations
         val enabledRepoIds =
             preferences[ENABLED_REPO_IDS]?.mapNotNull { it.toIntOrNull() }?.toSet() ?: emptySet()
         val deleteApkOnInstall = preferences[DELETE_APK_ON_INSTALL] ?: false

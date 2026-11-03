@@ -13,10 +13,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.snackbar.Snackbar
 import com.looker.droidify.R
 import com.looker.droidify.database.Database
 import com.looker.droidify.ui.ScreenFragment
+import com.looker.droidify.ui.markInstalledAsFavourites
 import com.looker.droidify.ui.setupSortOrderMenu
 import com.looker.droidify.utility.common.extension.systemBarsPadding
 import com.looker.droidify.utility.extension.mainActivity
@@ -102,15 +102,7 @@ class FavouritesFragment : ScreenFragment() {
 
         toolbar.menu.add(0, 0, 1, R.string.mark_installed_as_favourites)
             .setOnMenuItemClickListener {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    val installed = Database.ProductAdapter.getInstalledPackageNames()
-                    viewModel.addFavourites(installed)
-                    Snackbar.make(
-                        requireView(),
-                        R.string.marked_installed_as_favourites,
-                        Snackbar.LENGTH_SHORT,
-                    ).show()
-                }
+                markInstalledAsFavourites(requireView()) { viewModel.addFavourites(it) }
                 true
             }
     }

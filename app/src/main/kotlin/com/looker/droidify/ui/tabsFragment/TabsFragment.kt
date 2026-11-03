@@ -37,6 +37,7 @@ import com.looker.droidify.databinding.TabsToolbarBinding
 import com.looker.droidify.datastore.model.SortOrder
 import com.looker.droidify.datastore.model.StartupTab
 import com.looker.droidify.ui.SortOrderMenu
+import com.looker.droidify.ui.markInstalledAsFavourites
 import com.looker.droidify.ui.setupSortOrderMenu
 import com.looker.droidify.model.ProductItem
 import com.looker.droidify.service.Connection
@@ -235,15 +236,7 @@ class TabsFragment : ScreenFragment() {
 
             add(1, 0, 0, stringRes.mark_installed_as_favourites)
                 .setOnMenuItemClickListener {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        val installed = Database.ProductAdapter.getInstalledPackageNames()
-                        viewModel.addFavourites(installed)
-                        Snackbar.make(
-                            tabsBinding.root,
-                            stringRes.marked_installed_as_favourites,
-                            Snackbar.LENGTH_SHORT,
-                        ).show()
-                    }
+                    markInstalledAsFavourites(tabsBinding.root) { viewModel.addFavourites(it) }
                     true
                 }
 
