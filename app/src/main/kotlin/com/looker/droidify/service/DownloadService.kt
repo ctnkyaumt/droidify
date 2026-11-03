@@ -112,9 +112,8 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
 
     private val _downloadState = MutableStateFlow(DownloadState())
 
-    private typealias Task = DownloadTask
 
-    private data class CurrentTask(val task: Task, val lastState: State, val job: Job? = null)
+    private data class CurrentTask(val task: DownloadTask, val lastState: State, val job: Job? = null)
 
     private var started = false
     private var foregroundFailed = false
@@ -246,7 +245,7 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
     }
 
     private fun showErrorNotification(
-        task: Task,
+        task: DownloadTask,
         titleRes: Int,
         description: String?,
     ) {
@@ -271,7 +270,7 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
         )
     }
 
-    private fun showNotificationInstall(task: Task) {
+    private fun showNotificationInstall(task: DownloadTask) {
         val intent = Intent(this, MainActivity::class.java)
             .setAction(MainActivity.ACTION_INSTALL)
             .setData("package:${task.packageName}".toUri())
@@ -291,7 +290,7 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
         )
     }
 
-    private suspend fun publishSuccess(task: Task) {
+    private suspend fun publishSuccess(task: DownloadTask) {
         val currentInstaller = installerType.first()
         updateCurrentQueue { add("") }
         updateCurrentState(State.Success(task.packageName, task.release))
@@ -436,7 +435,7 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
             .toPendingIntent(this)
 
     private fun CoroutineScope.downloadFile(
-        task: Task,
+        task: DownloadTask,
         target: File,
     ) = launch {
         try {
