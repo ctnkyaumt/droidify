@@ -16,7 +16,7 @@ import com.looker.droidify.utility.serialization.repository
 
 private const val DB_LEGACY_NAME = "droidify"
 
-private const val DB_LEGACY_VERSION = 6
+private const val DB_LEGACY_VERSION = 7
 
 class DatabaseHelper(context: Context) :
     SQLiteOpenHelper(context, DB_LEGACY_NAME, null, DB_LEGACY_VERSION) {
@@ -33,6 +33,7 @@ class DatabaseHelper(context: Context) :
 
         // Add default repositories for new database
         db.addDefaultRepositories()
+        db.migrateRepositories()
         db.addOemRepositories()
         this.created = true
     }
@@ -40,6 +41,7 @@ class DatabaseHelper(context: Context) :
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         db.removeRepositories()
         db.addNewlyAddedRepositories()
+        db.migrateRepositories()
         db.addOemRepositories()
         this.updated = true
     }
@@ -72,6 +74,7 @@ class DatabaseHelper(context: Context) :
             Schema.RBLog,
             Schema.DownloadStats,
         )
+        db.migrateRepositories()
     }
 
     private fun SQLiteDatabase.addOemRepositories() {
@@ -164,6 +167,48 @@ class DatabaseHelper(context: Context) :
                     )
                 }
             }
+        }
+    }
+
+    private fun SQLiteDatabase.migrateRepositories() {
+        val updatedFingerprints = mapOf(
+            "https://store.nethunter.com/repo" to "FE7A23DFC003A1CF2D2ADD2469B9C0C49B206BA5DC9EDD6563B3B7EB6A8F5FAB",
+        )
+        try {
+            query(
+                Schema.Repository.name,
+                columns = arrayOf(Schema.Repository.ROW_ID, Schema.Repository.ROW_DATA),
+                selection = null,
+                signal = null,
+            ).use { cursor ->
+                cursor.asSequence().forEach {
+                    val idIndex = it.getColumnIndexOrThrow(Schema.Repository.ROW_ID)
+                    val dataIndex = it.getColumnIndexOrThrow(Schema.Repository.ROW_DATA)
+                    val id = it.getLong(idIndex)
+                    val data = it.getBlob(dataIndex)
+                    try {
+                        val repo = data.jsonParse { json -> json.repository() }
+                        val targetFingerprint = updatedFingerprints[repo.address]
+                        if (targetFingerprint != null &&
+                            !repo.fingerprint.equals(targetFingerprint, ignoreCase = true)
+                        ) {
+                            val updatedRepo = repo.copy(
+                                id = id,
+                                fingerprint = targetFingerprint,
+                                lastModified = "",
+                                entityTag = "",
+                            )
+                            RepositoryAdapter.putWithoutNotification(
+                                updatedRepo,
+                                shouldReplace = true,
+                                database = this,
+                            )
+                        }
+                    } catch (_: Exception) {
+                    }
+                }
+            }
+        } catch (_: Exception) {
         }
     }
 
