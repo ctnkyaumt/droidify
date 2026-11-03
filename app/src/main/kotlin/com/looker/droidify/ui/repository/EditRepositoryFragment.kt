@@ -256,6 +256,7 @@ class EditRepositoryFragment() : ScreenFragment() {
 
     private fun invalidateAddress(addressText: String) {
         val normalizedAddress = normalizeAddress(addressText)
+            ?.let { Repository.normalizeGitHubAddress(it) ?: it }
         val addressErrorResId = if (normalizedAddress != null) {
             if (normalizedAddress.withoutKnownPath in takenAddresses) {
                 stringRes.already_exists
@@ -381,6 +382,12 @@ class EditRepositoryFragment() : ScreenFragment() {
         if (!checkInProgress) {
             val address = normalizeAddress(binding.address.text.toString()) ?: kotlin.run {
                 failedAddressCheck()
+                return
+            }
+            // GitHub sources: no index to probe, no fingerprint and no credentials to send
+            val gitHubAddress = Repository.normalizeGitHubAddress(address)
+            if (gitHubAddress != null) {
+                onSaveRepositoryProceedInvalidate(gitHubAddress, "", "")
                 return
             }
             val fingerprint = binding.fingerprint.text.toString().replace(" ", "")
