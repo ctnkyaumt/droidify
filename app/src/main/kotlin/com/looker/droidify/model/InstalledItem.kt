@@ -5,4 +5,5 @@ data class InstalledItem(
     val version: String,
     val versionCode: Long,
     val signature: String,
+    val signatures: List<String> = if (signature.isBlank()) emptyList() else listOf(signature),
 )
