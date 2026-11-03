@@ -14,6 +14,7 @@ import com.looker.droidify.installer.installers.session.SessionInstaller
 import com.looker.droidify.installer.installers.shizuku.ShizukuInstaller
 import com.looker.droidify.installer.model.InstallItem
 import com.looker.droidify.installer.model.InstallState
+import com.looker.droidify.service.FailedUpdateTracker
 import com.looker.droidify.service.SyncService
 import com.looker.droidify.utility.common.Constants
 import com.looker.droidify.utility.common.cache.Cache
@@ -120,6 +121,11 @@ class InstallManager(
                         notification = notification,
                     )
                     InstallState.Failed
+                }
+                if (result == InstallState.Installed) {
+                    FailedUpdateTracker.recordSuccess(item.packageName.name)
+                } else if (result == InstallState.Failed && item.versionCode > 0L) {
+                    FailedUpdateTracker.recordFailure(item.packageName.name, item.versionCode)
                 }
                 if (result == InstallState.Installed && installer !is LegacyInstaller) {
                     if (deleteApkPreference.first()) {

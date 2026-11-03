@@ -7,12 +7,14 @@ import com.looker.droidify.model.UpdateResolver
 import com.looker.droidify.model.findSuggested
 import com.looker.droidify.service.Connection
 import com.looker.droidify.service.DownloadService
+import com.looker.droidify.service.FailedUpdateTracker
 import com.looker.droidify.utility.extension.android.Android
 
 fun Connection<DownloadService.Binder, DownloadService>.startUpdate(
     packageName: String,
     installedItem: InstalledItem?,
     products: List<Pair<Product, Repository>>,
+    isAutoUpdate: Boolean = false,
 ) {
     if (binder == null || products.isEmpty()) return
 
@@ -23,6 +25,10 @@ fun Connection<DownloadService.Binder, DownloadService>.startUpdate(
         installedItem = installedItem,
         primaryPlatform = Android.primaryPlatform,
     ) ?: return
+
+    if (isAutoUpdate && FailedUpdateTracker.shouldSkipAutoUpdate(packageName, selectedRelease.versionCode)) {
+        return
+    }
 
     if (installedItem != null &&
         !UpdateResolver.isSignatureCompatible(installedItem.signatures, selectedRelease.signature)

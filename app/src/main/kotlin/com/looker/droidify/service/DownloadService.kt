@@ -305,6 +305,7 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
             val installItem = InstallItem(
                 packageName = task.packageName.toPackageName(),
                 installFileName = task.release.cacheFileName,
+                versionCode = task.release.versionCode,
             )
             installer install installItem
         }

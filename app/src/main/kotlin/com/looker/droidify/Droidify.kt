@@ -26,6 +26,7 @@ import com.looker.droidify.index.RepositoryUpdater
 import com.looker.droidify.installer.InstallManager
 import com.looker.droidify.network.Downloader
 import com.looker.droidify.receivers.InstalledAppReceiver
+import com.looker.droidify.service.FailedUpdateTracker
 import com.looker.droidify.service.SyncService
 import com.looker.droidify.utility.common.cache.Cache
 import com.looker.droidify.utility.common.extension.getDrawableCompat
@@ -69,6 +70,7 @@ class Droidify : Application(), SingletonImageLoader.Factory, Configuration.Prov
         super.onCreate()
 
         val databaseUpdated = Database.init(this)
+        FailedUpdateTracker.init(this)
         ProductPreferences.init(this, appScope)
         RepositoryUpdater.init(appScope, downloader)
         listenApplications()

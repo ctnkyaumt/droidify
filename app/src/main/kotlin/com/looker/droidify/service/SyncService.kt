@@ -632,7 +632,7 @@ class SyncService : ConnectionService<SyncService.Binder>() {
                 if (settings.autoUpdate) {
                     autoUpdating = true
                     autoUpdateStartedFor = updates.map { it.packageName }
-                    updateAllAppsInternal(updates)
+                    updateAllAppsInternal(updates, isAutoUpdate = true)
                 }
             }
 
@@ -648,6 +648,7 @@ class SyncService : ConnectionService<SyncService.Binder>() {
 
     private suspend fun updateAllAppsInternal(
         updates: List<ProductItem>,
+        isAutoUpdate: Boolean = false,
     ) = withContext(Dispatchers.IO) {
         updates
             // Update Droid-ify the last
@@ -665,6 +666,7 @@ class SyncService : ConnectionService<SyncService.Binder>() {
                     installItem.packageName,
                     installItem,
                     productRepo,
+                    isAutoUpdate = isAutoUpdate,
                 )
             }
     }
