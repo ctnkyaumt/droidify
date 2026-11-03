@@ -253,15 +253,6 @@ fun SettingsScreen(
 
             item {
                 SwitchSettingItem(
-                    title = stringResource(R.string.download_stats),
-                    description = stringResource(R.string.download_statistics_summary),
-                    checked = settings.dlStatsEnabled,
-                    onCheckedChange = viewModel::setDownloadStatisticsEnabled,
-                )
-            }
-
-            item {
-                SwitchSettingItem(
                     title = stringResource(R.string.reproducibility_logs),
                     description = stringResource(R.string.reproducibility_logs_summary),
                     checked = settings.rbLogsEnabled,

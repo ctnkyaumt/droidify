@@ -120,36 +120,6 @@
                 android:singleLine="true"
                 android:textAppearance="?textAppearanceBodyMedium" />
         </LinearLayout>
-
-        <com.google.android.material.divider.MaterialDivider
-            android:id="@+id/downloads_block_divider"
-            android:layout_width="2dp"
-            android:layout_height="match_parent"
-            android:layout_marginVertical="12dp" />
-
-        <LinearLayout
-            android:id="@+id/downloads_block"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Downloads"
-                android:textAppearance="?textAppearanceTitleSmall" />
-
-            <TextView
-                android:id="@+id/downloads"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ellipsize="marquee"
-                android:singleLine="true"
-                android:textAppearance="?textAppearanceBodyMedium" />
-        </LinearLayout>
     </LinearLayout>
 
     <com.google.android.material.button.MaterialButton

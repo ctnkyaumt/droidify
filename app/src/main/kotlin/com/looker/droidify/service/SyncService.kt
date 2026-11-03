@@ -38,7 +38,6 @@ import com.looker.droidify.utility.common.extension.stopForegroundCompat
 import com.looker.droidify.utility.common.result.Result
 import com.looker.droidify.utility.extension.startUpdate
 import com.looker.droidify.utility.notifications.updatesAvailableNotification
-import com.looker.droidify.work.DownloadStatsWorker
 import com.looker.droidify.work.RBLogWorker
 import dagger.hilt.android.AndroidEntryPoint
 import java.lang.ref.WeakReference
@@ -175,7 +174,6 @@ class SyncService : ConnectionService<SyncService.Binder>() {
         fun sync(request: SyncRequest) {
             val settings = runBlocking { settingsRepository.getInitial() }
             if (settings.rbLogsEnabled) RBLogWorker.fetchRBLogs(applicationContext)
-            if (settings.dlStatsEnabled) DownloadStatsWorker.fetchDownloadStats(applicationContext)
 
             val ids = Database.RepositoryAdapter.getAll()
                 .filter { it.enabled }

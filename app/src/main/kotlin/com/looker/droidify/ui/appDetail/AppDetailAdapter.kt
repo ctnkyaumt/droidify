@@ -194,7 +194,6 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
         class AppInfoItem(
             val repository: Repository,
             val product: Product,
-            val downloads: Long,
         ) : Item() {
             override val descriptor: String
                 get() = "app_info.${product.name}"
@@ -428,10 +427,6 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
 
         val version = itemView.findViewById<TextView>(R.id.version)!!
         val size = itemView.findViewById<TextView>(R.id.size)!!
-        val downloadsBlockDividier =
-            itemView.findViewById<MaterialDivider>(R.id.downloads_block_divider)!!
-        val downloadsBlock = itemView.findViewById<LinearLayout>(R.id.downloads_block)!!
-        val downloads = itemView.findViewById<TextView>(R.id.downloads)!!
 
         val favouriteButton = itemView.findViewById<MaterialButton>(R.id.favourite)!!
     }
@@ -736,7 +731,6 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
         suggestedRepo: String? = null,
         products: List<Pair<Product, Repository>>,
         rblogs: List<RBLog>,
-        downloads: Long,
         installedItem: InstalledItem?,
         isFavourite: Boolean,
         allowIncompatibleVersion: Boolean,
@@ -755,7 +749,6 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
         items += Item.AppInfoItem(
             productRepository.second,
             productRepository.first,
-            downloads,
         )
 
         items += Item.DownloadStatusItem
@@ -1382,9 +1375,6 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
                 }
                 holder.size.text = DataSize(product?.displayRelease?.size ?: 0).toString()
 
-                holder.downloadsBlockDividier.isGone = item.downloads < 1
-                holder.downloadsBlock.isGone = item.downloads < 1
-                holder.downloads.text = item.downloads.toString()
                 holder.favouriteButton.isChecked = isFavourite
             }
 

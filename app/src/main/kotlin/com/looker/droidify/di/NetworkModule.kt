@@ -1,7 +1,5 @@
 package com.looker.droidify.di
 
-import com.looker.droidify.BuildConfig.BUILD_TYPE
-import com.looker.droidify.BuildConfig.VERSION_NAME
 import com.looker.droidify.datastore.SettingsRepository
 import com.looker.droidify.datastore.model.ProxyPreference
 import com.looker.droidify.datastore.model.ProxyType
@@ -36,7 +34,7 @@ object NetworkModule {
             .addInterceptor { chain ->
                 chain.proceed(
                     chain.request().newBuilder()
-                        .header("User-Agent", "Droid-ify/${VERSION_NAME}-${BUILD_TYPE}")
+                        .header("User-Agent", "Droid-ify")
                         .build(),
                 )
             }

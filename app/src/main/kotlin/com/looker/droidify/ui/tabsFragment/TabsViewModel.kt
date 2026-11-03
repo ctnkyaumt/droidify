@@ -76,7 +76,6 @@ class TabsViewModel @Inject constructor(
 
     suspend fun resetPrivacyFetchTimestamps() {
         settingsRepository.clearRbLogLastModified()
-        settingsRepository.clearDownloadStatsLastModified()
     }
 
     companion object {

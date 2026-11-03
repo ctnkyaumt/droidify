@@ -43,12 +43,10 @@ data class Settings(
     val lastCleanup: Instant? = null,
     val lastRbLogFetch: Long? = null,
     val rbLogMirrorIndex: Int = 0,
-    val lastModifiedDownloadStats: Long? = null,
     val favouriteApps: Set<String> = emptySet(),
     val homeScreenSwiping: Boolean = true,
     val enabledRepoIds: Set<Int> = emptySet(),
     val deleteApkOnInstall: Boolean = false,
-    val dlStatsEnabled: Boolean = true,
     val rbLogsEnabled: Boolean = true,
 )
 
