@@ -107,6 +107,7 @@ dependencies {
     implementation(libs.fragment.ktx)
     implementation(libs.lifecycle.viewModel)
     implementation(libs.recyclerview)
+    implementation(libs.swiperefreshlayout)
     implementation(libs.sqlite.ktx)
 
     implementation(libs.image.viewer)

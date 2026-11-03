@@ -4,6 +4,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import app.cash.turbine.test
 import com.looker.droidify.datastore.model.AutoSync
 import com.looker.droidify.datastore.model.SortOrder
+import com.looker.droidify.datastore.model.StartupTab
 import com.looker.droidify.datastore.model.Theme
 import com.looker.droidify.utility.common.Exporter
 import io.mockk.mockk
@@ -11,6 +12,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlin.time.Duration.Companion.hours
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -55,6 +57,7 @@ class PreferenceSettingsRepositoryTest {
         assertEquals(AutoSync.WIFI_ONLY, settings.autoSync)
         assertEquals(SortOrder.UPDATED, settings.sortOrder)
         assertFalse(settings.dynamicTheme)
+        assertFalse(settings.isoDateFormat)
     }
 
     @Test
@@ -113,6 +116,36 @@ class PreferenceSettingsRepositoryTest {
         val settings = repository.getInitial()
         assertEquals(AutoSync.NEVER, settings.autoSync)
     }
+
+    @Test
+    fun `setAutoSyncInterval updates auto sync interval`() = runTest {
+        repository.setAutoSyncInterval(6.hours)
+        val settings = repository.getInitial()
+        assertEquals(6.hours, settings.autoSyncInterval)
+    }
+
+    @Test
+    fun `setAlternativeNotificationIcon updates setting`() = runTest {
+        repository.setAlternativeNotificationIcon(true)
+        val settings = repository.getInitial()
+        assertTrue(settings.alternativeNotificationIcon)
+    }
+
+    @Test
+    fun `setStartupTab updates startup tab setting`() = runTest {
+        repository.setStartupTab(StartupTab.UPDATES)
+        val settings = repository.getInitial()
+        assertEquals(StartupTab.UPDATES, settings.startupTab)
+    }
+
+    @Test
+    fun `setIsoDateFormat updates iso date format setting`() = runTest {
+        repository.setIsoDateFormat(true)
+        val settings = repository.getInitial()
+        assertTrue(settings.isoDateFormat)
+    }
+
+
 
     @Test
     fun `setSortOrder updates sort order`() = runTest {

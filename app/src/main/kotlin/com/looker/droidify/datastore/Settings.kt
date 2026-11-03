@@ -6,6 +6,7 @@ import com.looker.droidify.datastore.model.InstallerType
 import com.looker.droidify.datastore.model.LegacyInstallerComponent
 import com.looker.droidify.datastore.model.ProxyPreference
 import com.looker.droidify.datastore.model.SortOrder
+import com.looker.droidify.datastore.model.StartupTab
 import com.looker.droidify.datastore.model.Theme
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -28,6 +29,7 @@ data class Settings(
     val language: String = "system",
     val incompatibleVersions: Boolean = false,
     val notifyUpdate: Boolean = true,
+    val alternativeNotificationIcon: Boolean = false,
     val unstableUpdate: Boolean = false,
     val ignoreSignature: Boolean = false,
     val theme: Theme = Theme.SYSTEM,
@@ -36,7 +38,10 @@ data class Settings(
     val legacyInstallerComponent: LegacyInstallerComponent? = null,
     val autoUpdate: Boolean = false,
     val autoSync: AutoSync = AutoSync.WIFI_ONLY,
+    val autoSyncInterval: Duration = 12.hours,
     val sortOrder: SortOrder = SortOrder.UPDATED,
+    val startupTab: StartupTab = StartupTab.AVAILABLE,
+    val isoDateFormat: Boolean = false,
     val proxy: ProxyPreference = ProxyPreference(),
     val cleanUpInterval: Duration = 12.hours,
     @Contextual

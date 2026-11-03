@@ -36,6 +36,8 @@ import com.looker.droidify.utility.common.extension.startForegroundSafe
 import com.looker.droidify.utility.common.extension.startServiceCompat
 import com.looker.droidify.utility.common.extension.stopForegroundCompat
 import com.looker.droidify.utility.common.result.Result
+import com.looker.droidify.utility.NotificationIconHelper
+import com.looker.droidify.utility.RepoSyncErrorManager
 import com.looker.droidify.utility.extension.startUpdate
 import com.looker.droidify.utility.notifications.updatesAvailableNotification
 import com.looker.droidify.work.RBLogWorker
@@ -43,6 +45,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.lang.ref.WeakReference
 import javax.inject.Inject
 import kotlin.math.roundToInt
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
@@ -258,6 +261,7 @@ class SyncService : ConnectionService<SyncService.Binder>() {
             val repository = Database.RepositoryAdapter.get(repositoryId)
             return repository != null && run {
                 setEnabled(repository, false)
+                RepoSyncErrorManager.clearError(this@SyncService, repository.id)
                 Database.RepositoryAdapter.markAsDeleted(repository.id)
                 true
             }
@@ -411,7 +415,7 @@ class SyncService : ConnectionService<SyncService.Binder>() {
             Constants.NOTIFICATION_ID_SYNCING,
             NotificationCompat
                 .Builder(this, Constants.NOTIFICATION_CHANNEL_SYNCING)
-                .setSmallIcon(AndroidR.drawable.stat_sys_warning)
+                .setSmallIcon(NotificationIconHelper.getNotificationIcon(this, AndroidR.drawable.stat_sys_warning))
                 .setColor(
                     ContextThemeWrapper(this, styleRes.Theme_Main_Light)
                         .getColorFromAttr(AndroidR.attr.colorPrimary).defaultColor,
@@ -432,7 +436,7 @@ class SyncService : ConnectionService<SyncService.Binder>() {
     private val stateNotificationBuilder by lazy {
         NotificationCompat
             .Builder(this, Constants.NOTIFICATION_CHANNEL_SYNCING)
-            .setSmallIcon(R.drawable.ic_sync)
+            .setSmallIcon(NotificationIconHelper.getNotificationIcon(this, R.drawable.ic_sync))
             .setColor(
                 ContextThemeWrapper(this, styleRes.Theme_Main_Light)
                     .getColorFromAttr(AndroidR.attr.colorPrimary).defaultColor,
@@ -603,10 +607,17 @@ class SyncService : ConnectionService<SyncService.Binder>() {
                         it.printStackTrace()
                         if (task.manual) showNotificationError(repository, it as Exception)
                     }
+                    val errorMsg = RepoSyncErrorManager.formatError(this@SyncService, response.exception)
+                    RepoSyncErrorManager.setError(this@SyncService, repository.id, errorMsg)
+                    Database.notifyChanged(Database.Subject.Repositories)
                     response.data == true || isIndexModified
                 }
 
-                is Result.Success -> response.data || isIndexModified
+                is Result.Success -> {
+                    RepoSyncErrorManager.clearError(this@SyncService, repository.id)
+                    Database.notifyChanged(Database.Subject.Repositories)
+                    response.data || isIndexModified
+                }
             }
         } finally {
             withContext(NonCancellable) {
@@ -720,7 +731,12 @@ class SyncService : ConnectionService<SyncService.Binder>() {
         }
 
         companion object {
-            fun schedule(context: Context, force: Boolean, autoSync: AutoSync) {
+            fun schedule(
+                context: Context,
+                force: Boolean,
+                autoSync: AutoSync,
+                interval: Duration = 12.hours,
+            ) {
                 val jobScheduler = context.jobScheduler
                 if (autoSync == AutoSync.NEVER) {
                     jobScheduler?.cancel(Constants.JOB_ID_SYNC)
@@ -737,7 +753,7 @@ class SyncService : ConnectionService<SyncService.Binder>() {
                 val isCompleted = jobScheduler?.allPendingJobs
                     ?.any { it.id == Constants.JOB_ID_SYNC } == false
                 if (force || isCompleted) {
-                    val period = 12.hours.inWholeMilliseconds
+                    val period = interval.inWholeMilliseconds
                     val builder = JobInfo.Builder(
                         Constants.JOB_ID_SYNC,
                         ComponentName(context, Job::class.java),

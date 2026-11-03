@@ -18,7 +18,9 @@ import com.looker.droidify.datastore.model.LegacyInstallerComponent
 import com.looker.droidify.datastore.model.ProxyPreference
 import com.looker.droidify.datastore.model.ProxyType
 import com.looker.droidify.datastore.model.SortOrder
+import com.looker.droidify.datastore.model.StartupTab
 import com.looker.droidify.datastore.model.Theme
+import com.looker.droidify.utility.DateFormatter
 import com.looker.droidify.utility.common.Exporter
 import com.looker.droidify.utility.common.extension.updateAsMutable
 import kotlinx.coroutines.flow.Flow
@@ -75,6 +77,9 @@ class PreferenceSettingsRepository(
     override suspend fun enableNotifyUpdates(enable: Boolean) =
         NOTIFY_UPDATES.update(enable)
 
+    override suspend fun setAlternativeNotificationIcon(enable: Boolean) =
+        ALTERNATIVE_NOTIFICATION_ICON.update(enable)
+
     override suspend fun enableUnstableUpdates(enable: Boolean) =
         UNSTABLE_UPDATES.update(enable)
 
@@ -124,8 +129,17 @@ class PreferenceSettingsRepository(
     override suspend fun setAutoSync(autoSync: AutoSync) =
         AUTO_SYNC.update(autoSync.name)
 
+    override suspend fun setAutoSyncInterval(interval: Duration) =
+        AUTO_SYNC_INTERVAL.update(interval.inWholeHours)
+
     override suspend fun setSortOrder(sortOrder: SortOrder) =
         SORT_ORDER.update(sortOrder.name)
+
+    override suspend fun setStartupTab(tab: StartupTab) =
+        STARTUP_TAB.update(tab.name)
+
+    override suspend fun setIsoDateFormat(enable: Boolean) =
+        ISO_DATE_FORMAT.update(enable)
 
     override suspend fun setProxyType(proxyType: ProxyType) =
         PROXY_TYPE.update(proxyType.name)
@@ -213,13 +227,18 @@ class PreferenceSettingsRepository(
         val language = preferences[LANGUAGE] ?: "system"
         val incompatibleVersions = preferences[INCOMPATIBLE_VERSIONS] ?: false
         val notifyUpdate = preferences[NOTIFY_UPDATES] ?: true
+        val alternativeNotificationIcon = preferences[ALTERNATIVE_NOTIFICATION_ICON] ?: false
         val unstableUpdate = preferences[UNSTABLE_UPDATES] ?: false
         val ignoreSignature = preferences[IGNORE_SIGNATURE] ?: false
         val theme = Theme.valueOf(preferences[THEME] ?: Theme.SYSTEM.name)
         val dynamicTheme = preferences[DYNAMIC_THEME] ?: false
         val autoUpdate = preferences[AUTO_UPDATE] ?: false
         val autoSync = AutoSync.valueOf(preferences[AUTO_SYNC] ?: AutoSync.WIFI_ONLY.name)
+        val autoSyncInterval = preferences[AUTO_SYNC_INTERVAL]?.hours ?: 12L.hours
         val sortOrder = SortOrder.valueOf(preferences[SORT_ORDER] ?: SortOrder.UPDATED.name)
+        val startupTab = StartupTab.valueOf(preferences[STARTUP_TAB] ?: StartupTab.AVAILABLE.name)
+        val isoDateFormat = preferences[ISO_DATE_FORMAT] ?: false
+        DateFormatter.useIso8601 = isoDateFormat
         val type = ProxyType.valueOf(preferences[PROXY_TYPE] ?: ProxyType.DIRECT.name)
         val host = preferences[PROXY_HOST] ?: "localhost"
         val port = preferences[PROXY_PORT] ?: 9050
@@ -239,6 +258,7 @@ class PreferenceSettingsRepository(
             language = language,
             incompatibleVersions = incompatibleVersions,
             notifyUpdate = notifyUpdate,
+            alternativeNotificationIcon = alternativeNotificationIcon,
             unstableUpdate = unstableUpdate,
             ignoreSignature = ignoreSignature,
             theme = theme,
@@ -247,7 +267,10 @@ class PreferenceSettingsRepository(
             legacyInstallerComponent = legacyInstallerComponent,
             autoUpdate = autoUpdate,
             autoSync = autoSync,
+            autoSyncInterval = autoSyncInterval,
             sortOrder = sortOrder,
+            startupTab = startupTab,
+            isoDateFormat = isoDateFormat,
             proxy = proxy,
             cleanUpInterval = cleanUpInterval,
             lastCleanup = lastCleanup,
@@ -271,9 +294,11 @@ class PreferenceSettingsRepository(
         val LANGUAGE = stringPreferencesKey("key_language")
         val INCOMPATIBLE_VERSIONS = booleanPreferencesKey("key_incompatible_versions")
         val NOTIFY_UPDATES = booleanPreferencesKey("key_notify_updates")
+        val ALTERNATIVE_NOTIFICATION_ICON = booleanPreferencesKey("key_alternative_notification_icon")
         val UNSTABLE_UPDATES = booleanPreferencesKey("key_unstable_updates")
         val IGNORE_SIGNATURE = booleanPreferencesKey("key_ignore_signature")
         val DYNAMIC_THEME = booleanPreferencesKey("key_dynamic_theme")
+        val ISO_DATE_FORMAT = booleanPreferencesKey("key_iso_date_format")
         val AUTO_UPDATE = booleanPreferencesKey("key_auto_updates")
         val PROXY_HOST = stringPreferencesKey("key_proxy_host")
         val PROXY_PORT = intPreferencesKey("key_proxy_port")
@@ -297,13 +322,16 @@ class PreferenceSettingsRepository(
         val THEME = stringPreferencesKey("key_theme")
         val INSTALLER_TYPE = stringPreferencesKey("key_installer_type")
         val AUTO_SYNC = stringPreferencesKey("key_auto_sync")
+        val AUTO_SYNC_INTERVAL = longPreferencesKey("key_auto_sync_interval")
         val SORT_ORDER = stringPreferencesKey("key_sort_order")
+        val STARTUP_TAB = stringPreferencesKey("key_startup_tab")
         val PROXY_TYPE = stringPreferencesKey("key_proxy_type")
 
         fun MutablePreferences.setting(settings: Settings): Preferences {
             set(LANGUAGE, settings.language)
             set(INCOMPATIBLE_VERSIONS, settings.incompatibleVersions)
             set(NOTIFY_UPDATES, settings.notifyUpdate)
+            set(ALTERNATIVE_NOTIFICATION_ICON, settings.alternativeNotificationIcon)
             set(UNSTABLE_UPDATES, settings.unstableUpdate)
             set(THEME, settings.theme.name)
             set(DYNAMIC_THEME, settings.dynamicTheme)
@@ -334,7 +362,10 @@ class PreferenceSettingsRepository(
             set(INSTALLER_TYPE, settings.installerType.name)
             set(AUTO_UPDATE, settings.autoUpdate)
             set(AUTO_SYNC, settings.autoSync.name)
+            set(AUTO_SYNC_INTERVAL, settings.autoSyncInterval.inWholeHours)
             set(SORT_ORDER, settings.sortOrder.name)
+            set(STARTUP_TAB, settings.startupTab.name)
+            set(ISO_DATE_FORMAT, settings.isoDateFormat)
             set(PROXY_TYPE, settings.proxy.type.name)
             set(PROXY_HOST, settings.proxy.host)
             set(PROXY_PORT, settings.proxy.port)

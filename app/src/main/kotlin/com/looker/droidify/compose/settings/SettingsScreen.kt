@@ -32,6 +32,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.looker.droidify.BuildConfig
 import com.looker.droidify.R
 import com.looker.droidify.compose.components.BackButton
+import com.looker.droidify.compose.settings.SettingsViewModel.Companion.autoSyncIntervals
 import com.looker.droidify.compose.settings.SettingsViewModel.Companion.cleanUpIntervals
 import com.looker.droidify.compose.settings.SettingsViewModel.Companion.localeCodesList
 import com.looker.droidify.compose.settings.components.ActionSettingItem
@@ -45,6 +46,7 @@ import com.looker.droidify.datastore.model.AutoSync
 import com.looker.droidify.datastore.model.InstallerType
 import com.looker.droidify.datastore.model.LegacyInstallerComponent
 import com.looker.droidify.datastore.model.ProxyType
+import com.looker.droidify.datastore.model.StartupTab
 import com.looker.droidify.datastore.model.Theme
 import com.looker.droidify.utility.common.SdkCheck
 import com.looker.droidify.utility.common.extension.getPackageInfoCompat
@@ -199,6 +201,22 @@ fun SettingsScreen(
                 )
             }
 
+            item(key = "setting_startup_tab") {
+                StartupTabSetting(
+                    selectedTab = settings.startupTab,
+                    onTabSelected = viewModel::setStartupTab,
+                )
+            }
+
+            item(key = "setting_iso_date_format") {
+                SwitchSettingItem(
+                    title = stringResource(R.string.iso_date_format),
+                    description = stringResource(R.string.iso_date_format_summary),
+                    checked = settings.isoDateFormat,
+                    onCheckedChange = viewModel::setIsoDateFormat,
+                )
+            }
+
             item(key = "header_updates") { SettingHeader(title = stringResource(R.string.updates)) }
 
             item(key = "setting_auto_update") {
@@ -216,6 +234,15 @@ fun SettingsScreen(
                     description = stringResource(R.string.notify_about_updates_summary),
                     checked = settings.notifyUpdate,
                     onCheckedChange = viewModel::setNotifyUpdates,
+                )
+            }
+
+            item(key = "setting_alternative_notification_icon") {
+                SwitchSettingItem(
+                    title = stringResource(R.string.alternative_notification_icon),
+                    description = stringResource(R.string.alternative_notification_icon_summary),
+                    checked = settings.alternativeNotificationIcon,
+                    onCheckedChange = viewModel::setAlternativeNotificationIcon,
                 )
             }
 
@@ -253,6 +280,15 @@ fun SettingsScreen(
                     selectedAutoSync = settings.autoSync,
                     onAutoSyncSelected = viewModel::setAutoSync,
                 )
+            }
+
+            if (settings.autoSync != AutoSync.NEVER) {
+                item(key = "setting_auto_sync_interval") {
+                    AutoSyncIntervalSetting(
+                        selectedInterval = settings.autoSyncInterval,
+                        onIntervalSelected = viewModel::setAutoSyncInterval,
+                    )
+                }
             }
 
             item(key = "setting_clean_up_interval") {
@@ -466,6 +502,40 @@ private fun AutoSyncSetting(
                 AutoSync.WIFI_ONLY -> stringResource(R.string.only_on_wifi)
                 AutoSync.WIFI_PLUGGED_IN -> stringResource(R.string.only_on_wifi_with_charging)
                 AutoSync.ALWAYS -> stringResource(R.string.always)
+            }
+        },
+    )
+}
+
+@Composable
+private fun AutoSyncIntervalSetting(
+    selectedInterval: Duration,
+    onIntervalSelected: (Duration) -> Unit,
+) {
+    SelectionSettingItem(
+        title = stringResource(R.string.auto_sync_interval),
+        selectedValue = selectedInterval,
+        values = autoSyncIntervals,
+        onValueSelected = onIntervalSelected,
+        valueToString = { duration -> duration.toDisplayString() },
+    )
+}
+
+@Composable
+private fun StartupTabSetting(
+    selectedTab: StartupTab,
+    onTabSelected: (StartupTab) -> Unit,
+) {
+    SelectionSettingItem(
+        title = stringResource(R.string.startup_tab),
+        selectedValue = selectedTab,
+        values = StartupTab.entries,
+        onValueSelected = onTabSelected,
+        valueToString = { tab ->
+            when (tab) {
+                StartupTab.AVAILABLE -> stringResource(R.string.available)
+                StartupTab.INSTALLED -> stringResource(R.string.installed)
+                StartupTab.UPDATES -> stringResource(R.string.updates)
             }
         },
     )

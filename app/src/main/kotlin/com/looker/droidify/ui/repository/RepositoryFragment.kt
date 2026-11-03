@@ -27,6 +27,8 @@ import com.looker.droidify.ui.MessageDialog
 import com.looker.droidify.ui.ScreenFragment
 import com.looker.droidify.utility.common.extension.getColorFromAttr
 import com.looker.droidify.utility.common.extension.systemBarsPadding
+import com.looker.droidify.utility.DateFormatter
+import com.looker.droidify.utility.RepoSyncErrorManager
 import com.looker.droidify.utility.extension.mainActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
@@ -127,18 +129,23 @@ class RepositoryFragment() : ScreenFragment() {
                 repoDescription.title.setText(stringRes.description)
                 repoDescription.text.text = repository.description.replace('\n', ' ').trim()
 
+                val syncError = RepoSyncErrorManager.getError(requireContext(), repository.id)
+                if (!syncError.isNullOrBlank()) {
+                    this.syncError.root.visibility = View.VISIBLE
+                    this.syncError.title.setText(stringRes.sync_error)
+                    this.syncError.text.text = syncError
+                    this.syncError.text.setTextColor(
+                        requireContext().getColorFromAttr(androidx.appcompat.R.attr.colorError).defaultColor,
+                    )
+                } else {
+                    this.syncError.root.visibility = View.GONE
+                }
+
                 recentlyUpdated.title.setText(stringRes.recently_updated)
                 recentlyUpdated.text.text = run {
                     val lastUpdated = repository.updated
                     if (lastUpdated > 0L) {
-                        val date = Date(repository.updated)
-                        val format =
-                            if (DateUtils.isToday(date.time)) {
-                                DateUtils.FORMAT_SHOW_TIME
-                            } else {
-                                DateUtils.FORMAT_SHOW_TIME or DateUtils.FORMAT_SHOW_DATE
-                            }
-                        DateUtils.formatDateTime(requireContext(), date.time, format)
+                        DateFormatter.formatRepoDate(requireContext(), lastUpdated)
                     } else {
                         getString(stringRes.unknown)
                     }

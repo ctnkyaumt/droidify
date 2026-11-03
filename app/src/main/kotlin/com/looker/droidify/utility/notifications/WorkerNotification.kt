@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Color
 import androidx.core.app.NotificationCompat
 import com.looker.droidify.R
+import com.looker.droidify.utility.NotificationIconHelper
 import com.looker.droidify.utility.common.Constants.NOTIFICATION_CHANNEL_SYNCING
 
 fun Context.createRbNotification(): Notification {
@@ -14,7 +15,7 @@ fun Context.createRbNotification(): Notification {
             setOngoing(false)
             setOnlyAlertOnce(true)
             setColor(Color.GREEN)
-            setSmallIcon(android.R.drawable.stat_sys_download)
+            setSmallIcon(NotificationIconHelper.getNotificationIcon(this@createRbNotification, android.R.drawable.stat_sys_download))
             setContentTitle(getString(R.string.downloading))
             setContentText(getString(R.string.downloading_rb_logs))
             setProgress(-1, -1, true)

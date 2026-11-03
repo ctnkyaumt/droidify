@@ -245,7 +245,7 @@ object Database {
         awaitClose { dataObservable(false, callback) }
     }.flowOn(Dispatchers.IO)
 
-    private fun notifyChanged(vararg subjects: Subject) {
+    internal fun notifyChanged(vararg subjects: Subject) {
         synchronized(observers) {
             subjects.asSequence().mapNotNull { observers[it] }.flatten().forEach { it() }
         }

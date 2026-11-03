@@ -18,6 +18,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.hasKeyWithValueOfType
 import com.looker.droidify.R
+import com.looker.droidify.utility.NotificationIconHelper
 import com.looker.droidify.data.RepoRepository
 import com.looker.droidify.sync.SyncState
 import com.looker.droidify.utility.common.createNotificationChannel
@@ -93,7 +94,7 @@ class SyncWorker @AssistedInject constructor(
             .setContentTitle(title)
             .setTicker(title)
             .setProgress(100, percent, percent == -1)
-            .setSmallIcon(R.drawable.ic_sync)
+            .setSmallIcon(NotificationIconHelper.getNotificationIcon(applicationContext, R.drawable.ic_sync))
             .setOngoing(true)
             .addAction(R.drawable.ic_cancel, cancel, intent)
             .build()

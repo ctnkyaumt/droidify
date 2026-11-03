@@ -8,6 +8,7 @@ import androidx.core.app.NotificationCompat
 import com.looker.droidify.MainActivity
 import com.looker.droidify.R
 import com.looker.droidify.model.ProductItem
+import com.looker.droidify.utility.NotificationIconHelper
 import com.looker.droidify.utility.common.Constants
 import com.looker.droidify.utility.common.SdkCheck
 import com.looker.droidify.utility.common.extension.getColorFromAttr
@@ -20,7 +21,7 @@ fun updatesAvailableNotification(
     productItems: List<ProductItem>,
 ) = NotificationCompat
     .Builder(context, Constants.NOTIFICATION_CHANNEL_UPDATES)
-    .setSmallIcon(R.drawable.ic_new_releases)
+    .setSmallIcon(NotificationIconHelper.getNotificationIcon(context, R.drawable.ic_new_releases))
     .setContentTitle(context.getString(R.string.new_updates_available))
     .setContentText(
         context.resources.getQuantityString(

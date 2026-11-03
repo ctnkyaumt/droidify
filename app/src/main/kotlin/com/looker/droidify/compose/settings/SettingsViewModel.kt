@@ -22,6 +22,7 @@ import com.looker.droidify.datastore.model.CustomButton
 import com.looker.droidify.datastore.model.InstallerType
 import com.looker.droidify.datastore.model.LegacyInstallerComponent
 import com.looker.droidify.datastore.model.ProxyType
+import com.looker.droidify.datastore.model.StartupTab
 import com.looker.droidify.datastore.model.Theme
 import com.looker.droidify.installer.installers.initSui
 import com.looker.droidify.installer.installers.isMagiskGranted
@@ -98,6 +99,18 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun setIsoDateFormat(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setIsoDateFormat(enabled)
+        }
+    }
+
+    fun setStartupTab(tab: StartupTab) {
+        viewModelScope.launch {
+            settingsRepository.setStartupTab(tab)
+        }
+    }
+
     fun setAutoUpdate(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setAutoUpdate(enabled)
@@ -107,6 +120,12 @@ class SettingsViewModel @Inject constructor(
     fun setNotifyUpdates(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.enableNotifyUpdates(enabled)
+        }
+    }
+
+    fun setAlternativeNotificationIcon(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setAlternativeNotificationIcon(enabled)
         }
     }
 
@@ -131,6 +150,12 @@ class SettingsViewModel @Inject constructor(
     fun setAutoSync(autoSync: AutoSync) {
         viewModelScope.launch {
             settingsRepository.setAutoSync(autoSync)
+        }
+    }
+
+    fun setAutoSyncInterval(interval: Duration) {
+        viewModelScope.launch {
+            settingsRepository.setAutoSyncInterval(interval)
         }
     }
 
@@ -297,6 +322,15 @@ class SettingsViewModel @Inject constructor(
     }
 
     companion object {
+        val autoSyncIntervals: List<Duration> = listOf(
+            1.hours,
+            3.hours,
+            6.hours,
+            12.hours,
+            1.days,
+            2.days,
+        )
+
         val cleanUpIntervals: List<Duration> = listOf(
             6.hours,
             12.hours,

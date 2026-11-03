@@ -6,6 +6,10 @@ import android.content.IntentFilter
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import androidx.work.WorkManager
+import com.looker.droidify.datastore.model.AutoSync
+import com.looker.droidify.work.SyncWorker
+import kotlinx.coroutines.flow.combine
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -28,6 +32,8 @@ import com.looker.droidify.network.Downloader
 import com.looker.droidify.receivers.InstalledAppReceiver
 import com.looker.droidify.service.FailedUpdateTracker
 import com.looker.droidify.service.SyncService
+import com.looker.droidify.utility.DateFormatter
+import com.looker.droidify.utility.NotificationIconHelper
 import com.looker.droidify.utility.common.cache.Cache
 import com.looker.droidify.utility.common.extension.getDrawableCompat
 import com.looker.droidify.utility.common.extension.getInstalledPackagesCompat
@@ -122,9 +128,29 @@ class Droidify : Application(), SingletonImageLoader.Factory, Configuration.Prov
                 }
             }
             launch {
-                settingsRepository.get { autoSync }.collectIndexed { index, syncMode ->
-                    // Don't update sync job on initial collect
-                    SyncService.Job.schedule(applicationContext, index > 0, syncMode)
+                settingsRepository.get { alternativeNotificationIcon }.collect {
+                    NotificationIconHelper.setAlternative(applicationContext, it)
+                }
+            }
+            launch {
+                settingsRepository.get { isoDateFormat }.collect {
+                    DateFormatter.useIso8601 = it
+                }
+            }
+            launch {
+                combine(
+                    settingsRepository.get { autoSync },
+                    settingsRepository.get { autoSyncInterval },
+                ) { syncMode, syncInterval ->
+                    syncMode to syncInterval
+                }.collectIndexed { index, (syncMode, syncInterval) ->
+
+                    SyncService.Job.schedule(applicationContext, index > 0, syncMode, syncInterval)
+                    if (syncMode == AutoSync.NEVER) {
+                        WorkManager.getInstance(applicationContext).cancelUniqueWork("SyncWorker")
+                    } else {
+                        SyncWorker.schedulePeriodicSync(applicationContext, syncInterval)
+                    }
                 }
             }
             launch {
