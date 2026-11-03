@@ -6,8 +6,11 @@ import com.looker.droidify.model.Release
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import java.io.InputStream
 
+@RunWith(RobolectricTestRunner::class)
 class KaliIndexV1ParserTest {
 
     @Test
