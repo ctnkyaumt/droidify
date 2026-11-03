@@ -135,7 +135,7 @@ class RepositoryFragment() : ScreenFragment() {
                     this.syncError.title.setText(stringRes.sync_error)
                     this.syncError.text.text = syncError
                     this.syncError.text.setTextColor(
-                        requireContext().getColorFromAttr(MaterialR.attr.colorError).defaultColor,
+                        requireContext().getColorFromAttr(androidx.appcompat.R.attr.colorError).defaultColor,
                     )
                 } else {
                     this.syncError.root.visibility = View.GONE
