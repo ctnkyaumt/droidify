@@ -121,12 +121,12 @@ class SyncService : ConnectionService<SyncService.Binder>() {
             val totalTasks: Int = 1,
         ) : State(appName)
 
-        data object Finish : State("")
+        data class Finish(val allUpToDate: Boolean = false) : State("")
 
         val progress: Int
             get() = when (this) {
                 is Connecting -> Int.MIN_VALUE
-                Finish -> Int.MAX_VALUE
+                is Finish -> Int.MAX_VALUE
                 is Syncing -> {
                     val stagePercent = when (stage) {
                         RepositoryUpdater.Stage.DOWNLOAD -> ((read percentBy total) * 0.4F).roundToInt()
@@ -159,6 +159,9 @@ class SyncService : ConnectionService<SyncService.Binder>() {
     private var foregroundFailed = false
     private var totalSyncTasks = 0
     private var completedSyncTasks = 0
+    private var syncBatchHadErrors = false
+    private var syncBatchWasManual = false
+    private var syncBatchTaskCount = 0
     private val tasks = mutableListOf<Task>()
     private var currentTask: CurrentTask? = null
 
@@ -180,6 +183,14 @@ class SyncService : ConnectionService<SyncService.Binder>() {
             cancelTasks { !it.manual && it.repositoryId in ids }
             val currentIds = tasks.asSequence().map { it.repositoryId }.toSet()
             val manual = request != SyncRequest.AUTO
+            if (manual) {
+                syncBatchWasManual = true
+            }
+            if (currentTask == null && tasks.isEmpty()) {
+                syncBatchHadErrors = false
+                syncBatchWasManual = manual
+                syncBatchTaskCount = 0
+            }
             tasks += ids.asSequence().filter {
                 it !in currentIds &&
                     it != currentTask?.task?.repositoryId
@@ -541,12 +552,20 @@ class SyncService : ConnectionService<SyncService.Binder>() {
         if (currentTask != null) return
         if (tasks.isEmpty()) {
             if (started != Started.NO) {
+                val wasManual = syncBatchWasManual || started == Started.MANUAL
+                val allUpToDate = wasManual &&
+                    !isIndexModified &&
+                    !syncBatchHadErrors &&
+                    syncBatchTaskCount > 0
                 lifecycleScope.launch {
-                    handleUpdates(settings)
+                    handleUpdates(settings, allUpToDate)
                 }
             }
             completedSyncTasks = 0
             totalSyncTasks = 0
+            syncBatchTaskCount = 0
+            syncBatchHadErrors = false
+            syncBatchWasManual = false
             return
         }
         val task = tasks.removeAt(0)
@@ -582,6 +601,7 @@ class SyncService : ConnectionService<SyncService.Binder>() {
         isIndexModified: Boolean,
         settings: Settings,
     ): CoroutinesJob = launch(Dispatchers.Default) {
+        syncBatchTaskCount++
         var isNewlyModified = isIndexModified
         try {
             val response = RepositoryUpdater.update(
@@ -604,6 +624,7 @@ class SyncService : ConnectionService<SyncService.Binder>() {
             }
             isNewlyModified = when (response) {
                 is Result.Error -> {
+                    syncBatchHadErrors = true
                     response.exception?.let {
                         it.printStackTrace()
                         if (task.manual) showNotificationError(repository, it as Exception)
@@ -632,7 +653,7 @@ class SyncService : ConnectionService<SyncService.Binder>() {
         }
     }
 
-    suspend fun handleUpdates(settings: Settings) {
+    suspend fun handleUpdates(settings: Settings, allUpToDate: Boolean = false) {
         try {
             val blocked = updateNotificationBlockerFragment?.get()?.isAdded == true
             val updates = Database.ProductAdapter.getUpdates(settings.ignoreSignature)
@@ -655,7 +676,7 @@ class SyncService : ConnectionService<SyncService.Binder>() {
                 }
             }
 
-            syncState.emit(State.Finish)
+            syncState.emit(State.Finish(allUpToDate = allUpToDate))
         } finally {
             withContext(NonCancellable) {
                 completedSyncTasks++

@@ -87,6 +87,28 @@ class PreferenceSettingsRepositoryTest {
     }
 
     @Test
+    fun `addFavourites bulk adds packages`() = runTest {
+        repository.addFavourites(listOf("com.example.one", "com.example.two"))
+        var settings = repository.getInitial()
+        assertTrue(settings.favouriteApps.contains("com.example.one"))
+        assertTrue(settings.favouriteApps.contains("com.example.two"))
+
+        repository.addFavourites(listOf("com.example.three"))
+        settings = repository.getInitial()
+        assertEquals(3, settings.favouriteApps.size)
+        assertTrue(settings.favouriteApps.contains("com.example.three"))
+    }
+
+    @Test
+    fun `setHideSystemApps updates hide system apps setting`() = runTest {
+        assertFalse(repository.getInitial().hideSystemApps)
+        repository.setHideSystemApps(true)
+        assertTrue(repository.getInitial().hideSystemApps)
+        repository.setHideSystemApps(false)
+        assertFalse(repository.getInitial().hideSystemApps)
+    }
+
+    @Test
     fun `setRepoEnabled manages enabled repos`() = runTest {
         repository.setRepoEnabled(1, true)
         repository.setRepoEnabled(2, true)

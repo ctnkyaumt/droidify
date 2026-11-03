@@ -116,15 +116,15 @@ class Droidify : Application(), SingletonImageLoader.Factory, Configuration.Prov
     private fun checkLanguage() {
         appScope.launch {
             val lastSetLanguage = settingsRepository.getInitial().language
-            val appLocales = AppCompatDelegate.getApplicationLocales()
-            val systemSetLanguage = appLocales.toLanguageTags()
-            if (lastSetLanguage.isNotBlank() && lastSetLanguage != "system" && systemSetLanguage.isEmpty()) {
-                withContext(Dispatchers.Main) {
-                    val locale = LocaleListCompat.forLanguageTags(lastSetLanguage)
-                    AppCompatDelegate.setApplicationLocales(locale)
+            val systemSetLanguage = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+            if (systemSetLanguage.isNotEmpty()) {
+                if (systemSetLanguage != lastSetLanguage) {
+                    settingsRepository.setLanguage(systemSetLanguage)
                 }
-            } else if (systemSetLanguage != lastSetLanguage && systemSetLanguage.isNotEmpty()) {
-                settingsRepository.setLanguage(systemSetLanguage)
+            } else if (lastSetLanguage != "system" && lastSetLanguage.isNotEmpty()) {
+                withContext(Dispatchers.Main) {
+                    AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lastSetLanguage))
+                }
             }
         }
     }

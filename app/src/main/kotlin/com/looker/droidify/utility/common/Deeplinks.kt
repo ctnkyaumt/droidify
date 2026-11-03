@@ -75,6 +75,12 @@ fun Intent.deeplinkType(): DeeplinkType? {
                     }
                 }
 
+                "search.f-droid.org" -> {
+                    val query = data["q"]?.nullIfEmpty()
+                        ?: invalidDeeplink("Invalid query: $data")
+                    DeeplinkType.AppSearch(query)
+                }
+
                 in supportedExternalHosts -> {
                     val packageName = data.lastPathSegment?.nullIfEmpty()
                         ?: invalidDeeplink("Invalid packageName: $data")

@@ -29,6 +29,7 @@ import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.elevation.SurfaceColors
 import com.google.android.material.shape.MaterialShapeDrawable
 import com.google.android.material.shape.ShapeAppearanceModel
+import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import com.looker.droidify.R
 import com.looker.droidify.database.Database
@@ -131,6 +132,9 @@ class TabsFragment : ScreenFragment() {
     )
 
     private var sectionsAnimator: ValueAnimator? = null
+
+    private var currentInstalledCount: Int? = null
+    private var currentUpdatesCount: Int? = null
 
     private var needSelectUpdates = false
 
@@ -240,6 +244,20 @@ class TabsFragment : ScreenFragment() {
                     true
                 }
 
+            add(1, 0, 0, stringRes.mark_installed_as_favourites)
+                .setOnMenuItemClickListener {
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val installed = Database.ProductAdapter.getInstalledPackageNames()
+                        viewModel.addFavourites(installed)
+                        Snackbar.make(
+                            tabsBinding.root,
+                            stringRes.marked_installed_as_favourites,
+                            Snackbar.LENGTH_SHORT,
+                        ).show()
+                    }
+                    true
+                }
+
             add(1, 0, 0, stringRes.repositories)
                 .setOnMenuItemClickListener {
                     view.post { mainActivity.navigateRepositories() }
@@ -297,7 +315,7 @@ class TabsFragment : ScreenFragment() {
         viewPager?.let {
             val smoothScroll = !AnimationHelper.shouldReduceAnimations(content.context)
             TabLayoutMediator(layout.tabs, it, true, smoothScroll) { tab, position ->
-                tab.text = getString(AppListFragment.Source.entries[position].titleResId)
+                tab.text = getTabTitle(position)
             }.attach()
         }
 
@@ -332,6 +350,18 @@ class TabsFragment : ScreenFragment() {
                     }
                 }
                 launch {
+                    viewModel.installedCount.collect { count ->
+                        currentInstalledCount = count
+                        layout.tabs.getTabAt(1)?.text = getTabTitle(1)
+                    }
+                }
+                launch {
+                    viewModel.updatesCount.collect { count ->
+                        currentUpdatesCount = count
+                        layout.tabs.getTabAt(2)?.text = getTabTitle(2)
+                    }
+                }
+                launch {
                     var maxProgress = 0
                     SyncService.syncState.collect {
                         when (it) {
@@ -340,9 +370,16 @@ class TabsFragment : ScreenFragment() {
                                 tabsBinding.syncState.isIndeterminate = true
                             }
 
-                            SyncService.State.Finish -> {
+                            is SyncService.State.Finish -> {
                                 maxProgress = 0
                                 tabsBinding.syncState.isGone = true
+                                if (it.allUpToDate) {
+                                    Snackbar.make(
+                                        tabsBinding.root,
+                                        stringRes.all_repositories_up_to_date,
+                                        Snackbar.LENGTH_SHORT,
+                                    ).show()
+                                }
                             }
 
                             is SyncService.State.Syncing -> {
@@ -458,6 +495,29 @@ class TabsFragment : ScreenFragment() {
         if (needSelectUpdates) {
             // don't clear the flag here - let selectUpdatesInternal / pageChangeCallback manage it
             selectUpdatesInternal(false)
+        }
+    }
+
+    private fun getTabTitle(position: Int): String {
+        val source = AppListFragment.Source.entries.getOrNull(position) ?: return ""
+        return when (source) {
+            AppListFragment.Source.AVAILABLE -> getString(source.titleResId)
+            AppListFragment.Source.INSTALLED -> {
+                val count = currentInstalledCount
+                if (count != null) {
+                    getString(stringRes.tab_title_with_count, getString(source.titleResId), count)
+                } else {
+                    getString(source.titleResId)
+                }
+            }
+            AppListFragment.Source.UPDATES -> {
+                val count = currentUpdatesCount
+                if (count != null) {
+                    getString(stringRes.tab_title_with_count, getString(source.titleResId), count)
+                } else {
+                    getString(source.titleResId)
+                }
+            }
         }
     }
 

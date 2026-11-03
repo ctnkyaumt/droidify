@@ -509,11 +509,45 @@ object Database {
                 }
             }
 
+        suspend fun getInstalledPackageNames(): List<String> = withContext(Dispatchers.IO) {
+            query(
+                installed = true,
+                updates = false,
+                searchQuery = "",
+                section = ProductItem.Section.All,
+                order = SortOrder.NAME,
+                signal = null,
+            ).use {
+                it.asSequence()
+                    .map(ProductAdapter::transformPackageName)
+                    .toList()
+            }
+        }
+
         fun getUpdatesStream(skipSignatureCheck: Boolean): Flow<List<ProductItem>> = flowOf(Unit)
             .onCompletion { if (it == null) emitAll(flowCollection(Subject.Products)) }
             // Crashes due to immediate retrieval of data?
             .onEach { delay(50) }
             .map { getUpdates(skipSignatureCheck) }
+            .flowOn(Dispatchers.IO)
+
+        fun getInstalledCountStream(
+            skipSignatureCheck: Boolean = false,
+            excludedPackages: Set<String> = emptySet(),
+        ): Flow<Int> = flowOf(Unit)
+            .onCompletion { if (it == null) emitAll(flowCollection(Subject.Products)) }
+            .map {
+                query(
+                    installed = true,
+                    updates = false,
+                    skipSignatureCheck = skipSignatureCheck,
+                    searchQuery = "",
+                    section = ProductItem.Section.All,
+                    order = SortOrder.NAME,
+                    signal = null,
+                    excludedPackages = excludedPackages,
+                ).use { it.count }
+            }
             .flowOn(Dispatchers.IO)
 
         fun getAll(): List<Product> {
@@ -581,6 +615,7 @@ object Database {
             section: ProductItem.Section,
             order: SortOrder,
             signal: CancellationSignal?,
+            excludedPackages: Set<String> = emptySet(),
         ): Cursor {
             val builder = QueryBuilder()
 
@@ -638,6 +673,13 @@ object Database {
 
             builder += """WHERE repository.${Schema.Repository.ROW_ENABLED} != 0 AND
         repository.${Schema.Repository.ROW_DELETED} == 0"""
+
+            if (installed && excludedPackages.isNotEmpty()) {
+                val sanitized = excludedPackages.filter { it.all { c -> c.isLetterOrDigit() || c == '.' || c == '_' } }
+                if (sanitized.isNotEmpty()) {
+                    builder += "AND product.${Schema.Product.ROW_PACKAGE_NAME} NOT IN (${sanitized.joinToString(",") { "'$it'" }})"
+                }
+            }
 
             if (section is ProductItem.Section.Category) {
                 builder += "AND category.${Schema.Category.ROW_NAME} = ?"

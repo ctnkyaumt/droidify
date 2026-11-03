@@ -13,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.snackbar.Snackbar
 import com.looker.droidify.R
 import com.looker.droidify.database.Database
 import com.looker.droidify.datastore.extension.sortOrderName
@@ -112,6 +113,20 @@ class FavouritesFragment : ScreenFragment() {
                 sortMenuItems.getOrNull(sortOrders.indexOf(sortOrder))?.isChecked = true
             }
         }
+
+        toolbar.menu.add(0, 0, 1, R.string.mark_installed_as_favourites)
+            .setOnMenuItemClickListener {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val installed = Database.ProductAdapter.getInstalledPackageNames()
+                    viewModel.addFavourites(installed)
+                    Snackbar.make(
+                        requireView(),
+                        R.string.marked_installed_as_favourites,
+                        Snackbar.LENGTH_SHORT,
+                    ).show()
+                }
+                true
+            }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

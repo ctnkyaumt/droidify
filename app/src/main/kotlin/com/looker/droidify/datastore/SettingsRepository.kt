@@ -76,6 +76,8 @@ interface SettingsRepository {
 
     suspend fun toggleFavourites(packageName: String)
 
+    suspend fun addFavourites(packageNames: Collection<String>)
+
     suspend fun setRepoEnabled(repoId: Int, enabled: Boolean)
 
     fun getEnabledRepoIds(): Flow<Set<Int>>
@@ -85,6 +87,8 @@ interface SettingsRepository {
     suspend fun setDeleteApkOnInstall(enable: Boolean)
 
     suspend fun setRBLogsEnabled(enabled: Boolean)
+
+    suspend fun setHideSystemApps(value: Boolean)
 
     suspend fun clearRbLogLastModified()
 }

@@ -318,4 +318,11 @@
     <string name="qr_scan_failed">Failed to scan QR code</string>
     <string name="reduce_animations_title">Reduce animations</string>
     <string name="reduce_animations_desc">Disable fragment transitions and tab animations</string>
+    <string name="all_repositories_up_to_date">All repositories are up to date</string>
+    <string name="initial_sync_in_progress">Syncing repositories for the first time, this can take a minute…</string>
+    <string name="mark_installed_as_favourites">Mark all installed apps as favourites</string>
+    <string name="marked_installed_as_favourites">All installed apps marked as favourites</string>
+    <string name="hide_system_apps">Hide system apps</string>
+    <string name="hide_system_apps_desc">Hide pre-installed system applications from the Installed tab</string>
+    <string name="tab_title_with_count">%1$s (%2$d)</string>
 </resources>
