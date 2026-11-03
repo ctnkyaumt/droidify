@@ -153,7 +153,7 @@ class AppListAdapter(
             ViewType.PRODUCT -> {
                 holder as ProductViewHolder
                 val productItem = getProductItem(position)
-                holder.name.text = productItem.name
+                holder.name.text = productItem.name.ifBlank { productItem.packageName }
                 holder.summary.text = productItem.summary
                 holder.summary.isVisible = productItem.summary.isNotEmpty() &&
                     productItem.name != productItem.summary
