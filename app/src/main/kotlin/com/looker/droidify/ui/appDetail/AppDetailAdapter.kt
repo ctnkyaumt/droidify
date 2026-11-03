@@ -193,6 +193,7 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
         ),
         TRACKER(drawableRes.ic_bug_report, stringRes.bug_tracker),
         CHANGELOG(drawableRes.ic_history, stringRes.changelog),
+        TRANSLATION(drawableRes.ic_public, stringRes.translation),
         WEB(drawableRes.ic_public, stringRes.project_website),
     }
 
@@ -1051,6 +1052,13 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
             changelog.nullIfEmpty()?.let {
                 linkItems += Item.LinkItem.Typed(
                     linkType = LinkType.CHANGELOG,
+                    text = "",
+                    uri = it.toUri(),
+                )
+            }
+            translation.nullIfEmpty()?.let {
+                linkItems += Item.LinkItem.Typed(
+                    linkType = LinkType.TRANSLATION,
                     text = "",
                     uri = it.toUri(),
                 )

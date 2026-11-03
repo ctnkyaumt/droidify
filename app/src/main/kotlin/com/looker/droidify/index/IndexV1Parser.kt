@@ -241,6 +241,7 @@ object IndexV1Parser {
     private const val KEY_PRODUCT_CHANGELOG = "changelog"
     private const val KEY_PRODUCT_WEBSITE = "webSite"
     private const val KEY_PRODUCT_ISSUETRACKER = "issueTracker"
+    private const val KEY_PRODUCT_TRANSLATION = "translation"
     private const val KEY_PRODUCT_ADDED = "added"
     private const val KEY_PRODUCT_LASTUPDATED = "lastUpdated"
     private const val KEY_PRODUCT_SUGGESTEDVERSIONCODE = "suggestedVersionCode"
@@ -274,6 +275,7 @@ object IndexV1Parser {
         var changelog = ""
         var web = ""
         var tracker = ""
+        var translation = ""
         var added = 0L
         var updated = 0L
         var suggestedVersionCode = 0L
@@ -297,6 +299,7 @@ object IndexV1Parser {
                 key.string(KEY_PRODUCT_CHANGELOG) -> changelog = valueAsString
                 key.string(KEY_PRODUCT_WEBSITE) -> web = valueAsString
                 key.string(KEY_PRODUCT_ISSUETRACKER) -> tracker = valueAsString
+                key.string(KEY_PRODUCT_TRANSLATION) -> translation = valueAsString
                 key.number(KEY_PRODUCT_ADDED) -> added = valueAsLong
                 key.number(KEY_PRODUCT_LASTUPDATED) -> updated = valueAsLong
                 key.string(KEY_PRODUCT_SUGGESTEDVERSIONCODE) ->
@@ -464,6 +467,7 @@ object IndexV1Parser {
             screenshots = screenshots,
             releases = emptyList(),
             antiFeatureReasons = antiFeatureReasons,
+            translation = translation,
         )
     }
 

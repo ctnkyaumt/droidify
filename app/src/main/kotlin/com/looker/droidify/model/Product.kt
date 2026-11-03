@@ -25,6 +25,7 @@ data class Product(
     val releases: List<Release>,
     // Anti-feature name to reason, only when the index provides one
     val antiFeatureReasons: Map<String, String> = emptyMap(),
+    val translation: String = "",
 ) {
     data class Author(val name: String, val email: String, val web: String)
 

@@ -28,6 +28,7 @@ fun Product.serialize(generator: JsonGenerator) {
     generator.writeStringField(CHANGELOG, changelog)
     generator.writeStringField(WEB, web)
     generator.writeStringField(TRACKER, tracker)
+    generator.writeStringField(TRANSLATION, translation)
     generator.writeNumberField(ADDED, added)
     generator.writeNumberField(UPDATED, updated)
     generator.writeNumberField(SUGGESTEDVERSIONCODE, suggestedVersionCode)
@@ -99,6 +100,7 @@ fun JsonParser.product(): Product {
     var changelog = KEY_EMPTY
     var web = KEY_EMPTY
     var tracker = KEY_EMPTY
+    var translation = KEY_EMPTY
     var added = 0L
     var updated = 0L
     var suggestedVersionCode = 0L
@@ -126,6 +128,7 @@ fun JsonParser.product(): Product {
             key.string(CHANGELOG) -> changelog = valueAsString
             key.string(WEB) -> web = valueAsString
             key.string(TRACKER) -> tracker = valueAsString
+            key.string(TRANSLATION) -> translation = valueAsString
             key.number(ADDED) -> added = valueAsLong
             key.number(UPDATED) -> updated = valueAsLong
             key.number(SUGGESTEDVERSIONCODE) -> suggestedVersionCode = valueAsLong
@@ -216,6 +219,7 @@ fun JsonParser.product(): Product {
         screenshots = screenshots,
         releases = releases,
         antiFeatureReasons = antiFeatureReasons,
+        translation = translation,
     )
 }
 
@@ -235,6 +239,7 @@ private const val SOURCE = "source"
 private const val CHANGELOG = "changelog"
 private const val WEB = "web"
 private const val TRACKER = "tracker"
+private const val TRANSLATION = "translation"
 private const val ADDED = "added"
 private const val UPDATED = "updated"
 private const val SUGGESTEDVERSIONCODE = "suggestedVersionCode"
