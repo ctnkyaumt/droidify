@@ -40,7 +40,28 @@ fun Html.format(
         }.last()
     }
 
+    val existingSpans = if (!isPlainText) {
+        builder.getSpans(0, builder.length, URLSpan::class.java).orEmpty().map { span ->
+            val start = builder.getSpanStart(span)
+            val end = builder.getSpanEnd(span)
+            val flags = builder.getSpanFlags(span)
+            val url = span.url
+            builder.removeSpan(span)
+            SavedUrlSpan(url, start, end, flags)
+        }
+    } else {
+        emptyList()
+    }
+
     LinkifyCompat.addLinks(builder, Linkify.WEB_URLS or Linkify.EMAIL_ADDRESSES)
+
+    for (info in existingSpans) {
+        val overlapping = builder.getSpans(info.start, info.end, URLSpan::class.java).orEmpty()
+        for (span in overlapping) {
+            builder.removeSpan(span)
+        }
+        builder.setSpan(URLSpan(info.url), info.start, info.end, info.flags)
+    }
 
     if (onUrlClick != null) {
         val urlSpans = builder.getSpans(0, builder.length, URLSpan::class.java).orEmpty()
@@ -82,3 +103,10 @@ fun formatHtml(
     html: String,
     onUrlClick: ((String) -> Unit)?,
 ): SpannableStringBuilder = Html(html).format(onUrlClick)
+
+private data class SavedUrlSpan(
+    val url: String,
+    val start: Int,
+    val end: Int,
+    val flags: Int,
+)
