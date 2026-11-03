@@ -1108,13 +1108,11 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
 
     var action: Action? = null
         set(value) {
-            val index = items.indexOf(Item.InstallButtonItem)
-            val progressBarIndex = items.indexOf(Item.DownloadStatusItem)
-            if (index > 0 && progressBarIndex > 0) {
-                notifyItemChanged(index)
-                notifyItemChanged(progressBarIndex)
+            if (field != value) {
+                field = value
+                val index = items.indexOf(Item.InstallButtonItem)
+                if (index >= 0) notifyItemChanged(index)
             }
-            field = value
         }
 
     var incompatibilityReason: CharSequence? = null
@@ -1122,17 +1120,17 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
             if (field != value) {
                 field = value
                 val index = items.indexOf(Item.InstallButtonItem)
-                if (index > 0) notifyItemChanged(index)
+                if (index >= 0) notifyItemChanged(index)
             }
         }
 
     var status: Status = Status.Idle
         set(value) {
             if (field != value) {
+                field = value
                 val index = items.indexOf(Item.DownloadStatusItem)
-                if (index > 0) notifyItemChanged(index)
+                if (index >= 0) notifyItemChanged(index)
             }
-            field = value
         }
 
     override val viewTypeClass: Class<ViewType>

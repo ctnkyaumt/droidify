@@ -393,7 +393,12 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
             }
         }
         if (isCompleted) {
-            detailAdapter?.status = AppDetailAdapter.Status.Idle
+            if (state.currentItem is DownloadService.State.Success) {
+                installing = InstallState.Pending
+                detailAdapter?.status = AppDetailAdapter.Status.PendingInstall
+            } else {
+                detailAdapter?.status = AppDetailAdapter.Status.Idle
+            }
         }
         if (this.downloading != isActive) {
             this.downloading = isActive
@@ -403,6 +408,8 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
             state.currentItem.packageName == viewModel.packageName &&
             isResumed
         ) {
+            installing = InstallState.Pending
+            detailAdapter?.status = AppDetailAdapter.Status.PendingInstall
             viewModel.installPackage(
                 state.currentItem.packageName,
                 state.currentItem.release.cacheFileName,

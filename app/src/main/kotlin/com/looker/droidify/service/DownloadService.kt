@@ -224,9 +224,13 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
     private fun cancelTasks(packageName: String?) {
         val removed = downloadQueue.cancel(packageName)
         if (removed && packageName != null) {
-            updateCurrentState(State.Cancel(packageName))
+            if (currentTask == null) {
+                updateCurrentState(State.Cancel(packageName))
+            }
         } else if (removed && packageName == null) {
-            updateCurrentState(State.Idle)
+            if (currentTask == null) {
+                updateCurrentState(State.Idle)
+            }
         }
     }
 
