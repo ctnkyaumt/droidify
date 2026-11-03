@@ -369,33 +369,12 @@ class SyncService : ConnectionService<SyncService.Binder>() {
     }
 
     private fun showNotificationError(repository: Repository, exception: Exception) {
-        val errorTypeDesc = when (exception) {
-            is RepositoryUpdater.UpdateException -> when (exception.errorType) {
-                RepositoryUpdater.ErrorType.NETWORK -> getString(stringRes.network_error_DESC)
-                RepositoryUpdater.ErrorType.HTTP -> getString(
-                    stringRes.http_error_DESC,
-                    exception.message.orEmpty(),
-                )
-
-                RepositoryUpdater.ErrorType.VALIDATION -> getString(stringRes.validation_index_error_DESC)
-                RepositoryUpdater.ErrorType.PARSING -> getString(stringRes.parsing_index_error_DESC)
-            }
-
-            else -> getString(stringRes.unknown_error_DESC)
-        }
-
-        val description = buildString {
-            append(errorTypeDesc)
-            if (!exception.message.isNullOrBlank()) {
-                append(": ")
-                append(exception.message)
-            }
-        }
+        val description = RepoSyncErrorManager.formatError(this, exception)
 
         val fullErrorDetails = buildString {
             appendLine("Repository: ${repository.name}")
             appendLine("Address: ${repository.address}")
-            appendLine("Error Type: $errorTypeDesc")
+            appendLine("Error Type: $description")
             appendLine("Message: ${exception.message ?: "N/A"}")
             appendLine()
             appendLine("Stack Trace:")
