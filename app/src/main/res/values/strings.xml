@@ -99,6 +99,8 @@
     Supported architectures: %2$s</string>
     <string name="incompatible_signature_DESC">This version is signed with a different signature than the one
     installed on your device</string>
+    <string name="incompatible_target_sdk_FORMAT">Target API %d too low</string>
+    <string name="incompatible_target_sdk_DESC_FORMAT">Target API version %d is too low to install on this Android version</string>
     <string name="incompatible_version">Incompatible version</string>
     <string name="incompatible_versions">Incompatible versions</string>
     <string name="incompatible_versions_summary">Show app versions incompatible with the device</string>

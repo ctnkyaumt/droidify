@@ -285,6 +285,11 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
                             name,
                         )
 
+                        is Release.Incompatibility.TargetSdk -> getString(
+                            stringRes.incompatible_target_sdk_FORMAT,
+                            selectedRelease.targetSdkVersion,
+                        )
+
                         is Release.Incompatibility.Platform -> getString(
                             stringRes.incompatible_with_FORMAT,
                             primaryPlatform ?: getString(stringRes.unknown),
@@ -641,6 +646,7 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
                         release.platforms,
                         release.minSdkVersion,
                         release.maxSdkVersion,
+                        release.targetSdkVersion,
                     ),
                 ).show(childFragmentManager)
             }

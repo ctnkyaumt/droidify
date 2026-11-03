@@ -1891,6 +1891,11 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
                                 Android.name,
                             )
 
+                            is Release.Incompatibility.TargetSdk -> context.getString(
+                                stringRes.incompatible_target_sdk_FORMAT,
+                                item.release.targetSdkVersion,
+                            )
+
                             is Release.Incompatibility.Platform -> context.getString(
                                 stringRes.incompatible_with_FORMAT,
                                 Android.primaryPlatform ?: context.getString(stringRes.unknown),

@@ -225,6 +225,9 @@ fun ReleaseItem(
                         ->
                             stringResource(R.string.incompatible_with_FORMAT, Android.name)
 
+                        is Release.Incompatibility.TargetSdk ->
+                            stringResource(R.string.incompatible_target_sdk_FORMAT, release.targetSdkVersion)
+
                         is Release.Incompatibility.Platform ->
                             stringResource(
                                 R.string.incompatible_with_FORMAT,
