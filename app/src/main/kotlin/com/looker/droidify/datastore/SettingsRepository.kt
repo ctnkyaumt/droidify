@@ -6,6 +6,7 @@ import com.looker.droidify.datastore.model.InstallerType
 import com.looker.droidify.datastore.model.LegacyInstallerComponent
 import com.looker.droidify.datastore.model.ProxyType
 import com.looker.droidify.datastore.model.SortOrder
+import com.looker.droidify.datastore.model.StartupTab
 import com.looker.droidify.datastore.model.Theme
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -50,6 +51,8 @@ interface SettingsRepository {
     suspend fun setAutoSyncInterval(interval: Duration)
 
     suspend fun setSortOrder(sortOrder: SortOrder)
+
+    suspend fun setStartupTab(tab: StartupTab)
 
     suspend fun setProxyType(proxyType: ProxyType)
 

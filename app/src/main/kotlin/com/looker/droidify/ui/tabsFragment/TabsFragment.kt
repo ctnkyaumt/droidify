@@ -35,6 +35,7 @@ import com.looker.droidify.database.Database
 import com.looker.droidify.databinding.TabsToolbarBinding
 import com.looker.droidify.datastore.extension.sortOrderName
 import com.looker.droidify.datastore.model.SortOrder
+import com.looker.droidify.datastore.model.StartupTab
 import com.looker.droidify.datastore.model.supportedSortOrders
 import com.looker.droidify.model.ProductItem
 import com.looker.droidify.service.Connection
@@ -56,6 +57,7 @@ import com.looker.droidify.widget.addDivider
 import dagger.hilt.android.AndroidEntryPoint
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.looker.droidify.R.string as stringRes
 
@@ -296,6 +298,15 @@ class TabsFragment : ScreenFragment() {
             TabLayoutMediator(layout.tabs, it) { tab, position ->
                 tab.text = getString(AppListFragment.Source.entries[position].titleResId)
             }.attach()
+        }
+
+        if (savedInstanceState == null && !needSelectUpdates) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                val tab = viewModel.startupTab.first()
+                if (savedInstanceState == null && !needSelectUpdates && tab != StartupTab.AVAILABLE) {
+                    viewPager?.setCurrentItem(tab.ordinal, false)
+                }
+            }
         }
 
         viewLifecycleOwner.lifecycleScope.launch {

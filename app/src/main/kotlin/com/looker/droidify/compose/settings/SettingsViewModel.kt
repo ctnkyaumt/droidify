@@ -22,6 +22,7 @@ import com.looker.droidify.datastore.model.CustomButton
 import com.looker.droidify.datastore.model.InstallerType
 import com.looker.droidify.datastore.model.LegacyInstallerComponent
 import com.looker.droidify.datastore.model.ProxyType
+import com.looker.droidify.datastore.model.StartupTab
 import com.looker.droidify.datastore.model.Theme
 import com.looker.droidify.installer.installers.initSui
 import com.looker.droidify.installer.installers.isMagiskGranted
@@ -95,6 +96,12 @@ class SettingsViewModel @Inject constructor(
     fun setHomeScreenSwiping(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setHomeScreenSwiping(enabled)
+        }
+    }
+
+    fun setStartupTab(tab: StartupTab) {
+        viewModelScope.launch {
+            settingsRepository.setStartupTab(tab)
         }
     }
 

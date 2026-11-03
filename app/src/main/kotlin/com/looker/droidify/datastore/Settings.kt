@@ -6,6 +6,7 @@ import com.looker.droidify.datastore.model.InstallerType
 import com.looker.droidify.datastore.model.LegacyInstallerComponent
 import com.looker.droidify.datastore.model.ProxyPreference
 import com.looker.droidify.datastore.model.SortOrder
+import com.looker.droidify.datastore.model.StartupTab
 import com.looker.droidify.datastore.model.Theme
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -39,6 +40,7 @@ data class Settings(
     val autoSync: AutoSync = AutoSync.WIFI_ONLY,
     val autoSyncInterval: Duration = 12.hours,
     val sortOrder: SortOrder = SortOrder.UPDATED,
+    val startupTab: StartupTab = StartupTab.AVAILABLE,
     val proxy: ProxyPreference = ProxyPreference(),
     val cleanUpInterval: Duration = 12.hours,
     @Contextual

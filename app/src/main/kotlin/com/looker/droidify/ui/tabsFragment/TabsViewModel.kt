@@ -9,6 +9,7 @@ import com.looker.droidify.utility.CategoryLocalization
 import com.looker.droidify.datastore.SettingsRepository
 import com.looker.droidify.datastore.get
 import com.looker.droidify.datastore.model.SortOrder
+import com.looker.droidify.datastore.model.StartupTab
 import com.looker.droidify.model.ProductItem
 import com.looker.droidify.ui.tabsFragment.TabsFragment.BackAction
 import com.looker.droidify.utility.common.extension.asStateFlow
@@ -32,6 +33,10 @@ class TabsViewModel @Inject constructor(
     val sortOrder = settingsRepository
         .get { sortOrder }
         .asStateFlow(SortOrder.UPDATED)
+
+    val startupTab = settingsRepository
+        .get { startupTab }
+        .asStateFlow(StartupTab.AVAILABLE)
 
     val allowHomeScreenSwiping = settingsRepository
         .get { homeScreenSwiping }

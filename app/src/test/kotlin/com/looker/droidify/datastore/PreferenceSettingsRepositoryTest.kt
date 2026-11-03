@@ -4,6 +4,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import app.cash.turbine.test
 import com.looker.droidify.datastore.model.AutoSync
 import com.looker.droidify.datastore.model.SortOrder
+import com.looker.droidify.datastore.model.StartupTab
 import com.looker.droidify.datastore.model.Theme
 import com.looker.droidify.utility.common.Exporter
 import io.mockk.mockk
@@ -127,6 +128,13 @@ class PreferenceSettingsRepositoryTest {
         repository.setAlternativeNotificationIcon(true)
         val settings = repository.getInitial()
         assertTrue(settings.alternativeNotificationIcon)
+    }
+
+    @Test
+    fun `setStartupTab updates startup tab setting`() = runTest {
+        repository.setStartupTab(StartupTab.UPDATES)
+        val settings = repository.getInitial()
+        assertEquals(StartupTab.UPDATES, settings.startupTab)
     }
 
 

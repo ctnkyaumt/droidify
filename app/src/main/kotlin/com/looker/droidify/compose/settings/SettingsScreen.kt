@@ -46,6 +46,7 @@ import com.looker.droidify.datastore.model.AutoSync
 import com.looker.droidify.datastore.model.InstallerType
 import com.looker.droidify.datastore.model.LegacyInstallerComponent
 import com.looker.droidify.datastore.model.ProxyType
+import com.looker.droidify.datastore.model.StartupTab
 import com.looker.droidify.datastore.model.Theme
 import com.looker.droidify.utility.common.SdkCheck
 import com.looker.droidify.utility.common.extension.getPackageInfoCompat
@@ -197,6 +198,13 @@ fun SettingsScreen(
                     description = stringResource(R.string.home_screen_swiping_DESC),
                     checked = settings.homeScreenSwiping,
                     onCheckedChange = viewModel::setHomeScreenSwiping,
+                )
+            }
+
+            item(key = "setting_startup_tab") {
+                StartupTabSetting(
+                    selectedTab = settings.startupTab,
+                    onTabSelected = viewModel::setStartupTab,
                 )
             }
 
@@ -501,6 +509,26 @@ private fun AutoSyncIntervalSetting(
         values = autoSyncIntervals,
         onValueSelected = onIntervalSelected,
         valueToString = { duration -> duration.toDisplayString() },
+    )
+}
+
+@Composable
+private fun StartupTabSetting(
+    selectedTab: StartupTab,
+    onTabSelected: (StartupTab) -> Unit,
+) {
+    SelectionSettingItem(
+        title = stringResource(R.string.startup_tab),
+        selectedValue = selectedTab,
+        values = StartupTab.entries,
+        onValueSelected = onTabSelected,
+        valueToString = { tab ->
+            when (tab) {
+                StartupTab.AVAILABLE -> stringResource(R.string.available)
+                StartupTab.INSTALLED -> stringResource(R.string.installed)
+                StartupTab.UPDATES -> stringResource(R.string.updates)
+            }
+        },
     )
 }
 

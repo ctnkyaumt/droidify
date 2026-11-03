@@ -18,6 +18,7 @@ import com.looker.droidify.datastore.model.LegacyInstallerComponent
 import com.looker.droidify.datastore.model.ProxyPreference
 import com.looker.droidify.datastore.model.ProxyType
 import com.looker.droidify.datastore.model.SortOrder
+import com.looker.droidify.datastore.model.StartupTab
 import com.looker.droidify.datastore.model.Theme
 import com.looker.droidify.utility.common.Exporter
 import com.looker.droidify.utility.common.extension.updateAsMutable
@@ -133,6 +134,9 @@ class PreferenceSettingsRepository(
     override suspend fun setSortOrder(sortOrder: SortOrder) =
         SORT_ORDER.update(sortOrder.name)
 
+    override suspend fun setStartupTab(tab: StartupTab) =
+        STARTUP_TAB.update(tab.name)
+
     override suspend fun setProxyType(proxyType: ProxyType) =
         PROXY_TYPE.update(proxyType.name)
 
@@ -228,6 +232,7 @@ class PreferenceSettingsRepository(
         val autoSync = AutoSync.valueOf(preferences[AUTO_SYNC] ?: AutoSync.WIFI_ONLY.name)
         val autoSyncInterval = preferences[AUTO_SYNC_INTERVAL]?.hours ?: 12L.hours
         val sortOrder = SortOrder.valueOf(preferences[SORT_ORDER] ?: SortOrder.UPDATED.name)
+        val startupTab = StartupTab.valueOf(preferences[STARTUP_TAB] ?: StartupTab.AVAILABLE.name)
         val type = ProxyType.valueOf(preferences[PROXY_TYPE] ?: ProxyType.DIRECT.name)
         val host = preferences[PROXY_HOST] ?: "localhost"
         val port = preferences[PROXY_PORT] ?: 9050
@@ -258,6 +263,7 @@ class PreferenceSettingsRepository(
             autoSync = autoSync,
             autoSyncInterval = autoSyncInterval,
             sortOrder = sortOrder,
+            startupTab = startupTab,
             proxy = proxy,
             cleanUpInterval = cleanUpInterval,
             lastCleanup = lastCleanup,
@@ -310,6 +316,7 @@ class PreferenceSettingsRepository(
         val AUTO_SYNC = stringPreferencesKey("key_auto_sync")
         val AUTO_SYNC_INTERVAL = longPreferencesKey("key_auto_sync_interval")
         val SORT_ORDER = stringPreferencesKey("key_sort_order")
+        val STARTUP_TAB = stringPreferencesKey("key_startup_tab")
         val PROXY_TYPE = stringPreferencesKey("key_proxy_type")
 
         fun MutablePreferences.setting(settings: Settings): Preferences {
@@ -349,6 +356,7 @@ class PreferenceSettingsRepository(
             set(AUTO_SYNC, settings.autoSync.name)
             set(AUTO_SYNC_INTERVAL, settings.autoSyncInterval.inWholeHours)
             set(SORT_ORDER, settings.sortOrder.name)
+            set(STARTUP_TAB, settings.startupTab.name)
             set(PROXY_TYPE, settings.proxy.type.name)
             set(PROXY_HOST, settings.proxy.host)
             set(PROXY_PORT, settings.proxy.port)
