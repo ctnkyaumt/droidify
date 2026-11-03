@@ -322,7 +322,11 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
                 installFileName = task.release.cacheFileName,
                 versionCode = task.release.versionCode,
             )
-            installer install installItem
+            runCatching {
+                installer install installItem
+            }.onFailure { e ->
+                Log.e("DownloadService", "Failed to enqueue install for ${task.packageName}", e)
+            }
         }
     }
 
@@ -520,6 +524,12 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
                     showErrorNotification(task, could_not_download_FORMAT, description)
                 }
             }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e("DownloadService", "Error downloading ${task.packageName}", e)
+            updateCurrentState(State.Error(task.packageName))
+            showErrorNotification(task, could_not_download_FORMAT, e.message ?: getString(unknown_error_DESC))
         } finally {
             downloadQueue.completeActive(task.packageName)
             updateBatchProgress()

@@ -58,6 +58,7 @@
     <string name="error_shizuku_not_installed">Shizuku/Sui not installed</string>
     <string name="error_shizuku_not_installed_DESC">Shizuku/Sui isn\'t installed</string>
     <string name="error_root_not_available">Root access unavailable or revoked. Please verify root access or switch installer in Settings.</string>
+    <string name="install_timed_out">Installation timed out</string>
 
     <string name="import_export">Backup and restore</string>
     <string name="import_settings_title">Import favourites and settings</string>
