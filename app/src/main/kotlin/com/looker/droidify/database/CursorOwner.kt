@@ -24,6 +24,7 @@ class CursorOwner : Fragment(), LoaderManager.LoaderCallbacks<Cursor> {
             val searchQuery: String,
             val order: SortOrder,
             val skipSignatureCheck: Boolean = false,
+            val excludedPackages: Set<String> = emptySet(),
         ) : Request(2)
 
         data class Updates(
@@ -101,6 +102,7 @@ class CursorOwner : Fragment(), LoaderManager.LoaderCallbacks<Cursor> {
                             order = request.order,
                             signal = it,
                             skipSignatureCheck = request.skipSignatureCheck,
+                            excludedPackages = request.excludedPackages,
                         )
 
                 is Request.Updates ->

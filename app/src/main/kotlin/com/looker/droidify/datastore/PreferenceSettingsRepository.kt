@@ -175,6 +175,17 @@ class PreferenceSettingsRepository(
         }
     }
 
+    override suspend fun addFavourites(packageNames: Collection<String>) {
+        if (packageNames.isEmpty()) return
+        dataStore.edit { preference ->
+            val currentSet = preference[FAVOURITE_APPS] ?: emptySet()
+            val newSet = currentSet.updateAsMutable {
+                addAll(packageNames)
+            }
+            preference[FAVOURITE_APPS] = newSet
+        }
+    }
+
     override suspend fun setRepoEnabled(repoId: Int, enabled: Boolean) {
         dataStore.edit { preference ->
             val currentSet = preference[ENABLED_REPO_IDS] ?: emptySet()
@@ -198,6 +209,9 @@ class PreferenceSettingsRepository(
 
     override suspend fun setRBLogsEnabled(enabled: Boolean) =
         REPRODUCIBILITY_LOGS_ENABLED.update(enabled)
+
+    override suspend fun setHideSystemApps(value: Boolean) =
+        HIDE_SYSTEM_APPS.update(value)
 
     override suspend fun clearRbLogLastModified() {
         dataStore.edit { pref ->
@@ -253,6 +267,7 @@ class PreferenceSettingsRepository(
             preferences[ENABLED_REPO_IDS]?.mapNotNull { it.toIntOrNull() }?.toSet() ?: emptySet()
         val deleteApkOnInstall = preferences[DELETE_APK_ON_INSTALL] ?: false
         val reproducibilityLogsEnabled = preferences[REPRODUCIBILITY_LOGS_ENABLED] ?: true
+        val hideSystemApps = preferences[HIDE_SYSTEM_APPS] ?: false
 
         return Settings(
             language = language,
@@ -281,6 +296,7 @@ class PreferenceSettingsRepository(
             enabledRepoIds = enabledRepoIds,
             deleteApkOnInstall = deleteApkOnInstall,
             rbLogsEnabled = reproducibilityLogsEnabled,
+            hideSystemApps = hideSystemApps,
         )
     }
 
@@ -310,6 +326,7 @@ class PreferenceSettingsRepository(
         val HOME_SCREEN_SWIPING = booleanPreferencesKey("key_home_swiping")
         val DELETE_APK_ON_INSTALL = booleanPreferencesKey("key_delete_apk_on_install")
         val REPRODUCIBILITY_LOGS_ENABLED = booleanPreferencesKey("key_reproducibility_logs_enabled")
+        val HIDE_SYSTEM_APPS = booleanPreferencesKey("key_hide_system_apps")
         val LEGACY_INSTALLER_COMPONENT_CLASS =
             stringPreferencesKey("key_legacy_installer_component_class")
         val LEGACY_INSTALLER_COMPONENT_ACTIVITY =
@@ -378,6 +395,7 @@ class PreferenceSettingsRepository(
             set(ENABLED_REPO_IDS, settings.enabledRepoIds.map { it.toString() }.toSet())
             set(DELETE_APK_ON_INSTALL, settings.deleteApkOnInstall)
             set(REPRODUCIBILITY_LOGS_ENABLED, settings.rbLogsEnabled)
+            set(HIDE_SYSTEM_APPS, settings.hideSystemApps)
             return this.toPreferences()
         }
     }

@@ -53,6 +53,7 @@ data class Settings(
     val enabledRepoIds: Set<Int> = emptySet(),
     val deleteApkOnInstall: Boolean = false,
     val rbLogsEnabled: Boolean = true,
+    val hideSystemApps: Boolean = false,
 )
 
 @OptIn(ExperimentalSerializationApi::class)

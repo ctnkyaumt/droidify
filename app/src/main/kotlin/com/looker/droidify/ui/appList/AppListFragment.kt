@@ -74,6 +74,7 @@ class AppListFragment() : Fragment(), CursorOwner.Callback {
     private var layoutManagerState: Parcelable? = null
 
     private var searchQuery: String = ""
+    private var isSyncing = false
 
     private val updateAllRequested = MutableStateFlow(false)
     private val downloadState = MutableStateFlow(DownloadService.DownloadState())
@@ -171,14 +172,17 @@ class AppListFragment() : Fragment(), CursorOwner.Callback {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     SyncService.syncState.collect { state ->
+                        isSyncing = state !is SyncService.State.Finish
                         if (state is SyncService.State.Finish) {
                             binding.swipeRefresh.isRefreshing = false
                         }
+                        updateEmptyText()
                     }
                 }
                 launch {
                     viewModel.reposStream.collect { repos ->
                         appListAdapter.repositories = repos.associateBy { it.id }
+                        updateEmptyText()
                     }
                 }
                 launch {
@@ -212,10 +216,28 @@ class AppListFragment() : Fragment(), CursorOwner.Callback {
 
     override fun onCursorData(request: CursorOwner.Request, cursor: Cursor?) {
         appListAdapter.cursor = cursor
+        updateEmptyText()
+        layoutManagerState?.let {
+            layoutManagerState = null
+            recyclerView.layoutManager?.onRestoreInstanceState(it)
+        }
+    }
+
+    private fun updateEmptyText() {
+        val cursor = appListAdapter.cursor
+        val isInitialSync = isSyncing &&
+            searchQuery.isEmpty() &&
+            (cursor == null || cursor.count == 0) &&
+            viewModel.reposStream.value.let { repos -> repos.isNotEmpty() && repos.all { it.updated == 0L } }
+
         appListAdapter.emptyText = when {
-            cursor == null -> ""
+            cursor == null && !isInitialSync -> ""
             searchQuery.isNotEmpty() -> {
                 getString(stringRes.no_matching_applications_found)
+            }
+
+            isInitialSync -> {
+                getString(stringRes.initial_sync_in_progress)
             }
 
             else -> when (source) {
@@ -224,9 +246,8 @@ class AppListFragment() : Fragment(), CursorOwner.Callback {
                 Source.UPDATES -> getString(stringRes.all_applications_up_to_date)
             }
         }
-        layoutManagerState?.let {
-            layoutManagerState = null
-            recyclerView.layoutManager?.onRestoreInstanceState(it)
+        if (appListAdapter.itemCount == 1 && appListAdapter.getItemEnumViewType(0) == AppListAdapter.ViewType.EMPTY) {
+            appListAdapter.notifyItemChanged(0)
         }
     }
 

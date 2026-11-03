@@ -273,6 +273,15 @@ fun SettingsScreen(
                 )
             }
 
+            item(key = "setting_hide_system_apps") {
+                SwitchSettingItem(
+                    title = stringResource(R.string.hide_system_apps),
+                    description = stringResource(R.string.hide_system_apps_desc),
+                    checked = settings.hideSystemApps,
+                    onCheckedChange = viewModel::setHideSystemApps,
+                )
+            }
+
             item(key = "header_sync") { SettingHeader(title = stringResource(R.string.sync_repositories)) }
 
             item(key = "setting_auto_sync") {
