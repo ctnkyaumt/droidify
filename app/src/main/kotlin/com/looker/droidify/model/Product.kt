@@ -70,16 +70,22 @@ data class Product(
         get() = releases.filter { it.selected }
 
     val displayRelease: Release?
-        get() = selectedReleases.firstOrNull() ?: releases.firstOrNull()
+        get() = selectedReleases.firstOrNull()
+            ?: releases.firstOrNull { it.incompatibilities.isEmpty() }
+            ?: releases.firstOrNull()
 
     val version: String
         get() = displayRelease?.version.orEmpty()
 
     val versionCode: Long
-        get() = selectedReleases.firstOrNull()?.versionCode ?: 0L
+        get() = selectedReleases.firstOrNull()?.versionCode
+            ?: releases.filter { it.incompatibilities.isEmpty() }.maxOfOrNull { it.versionCode }
+            ?: releases.firstOrNull()?.versionCode
+            ?: 0L
 
     val compatible: Boolean
-        get() = selectedReleases.firstOrNull()?.incompatibilities?.isEmpty() == true
+        get() = selectedReleases.firstOrNull()?.incompatibilities?.isEmpty()
+            ?: releases.any { it.incompatibilities.isEmpty() }
 
     val signatures: List<String>
         get() = releases.filter { it.incompatibilities.isEmpty() }

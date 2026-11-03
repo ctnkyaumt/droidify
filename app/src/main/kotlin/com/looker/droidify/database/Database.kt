@@ -613,10 +613,10 @@ object Database {
             }
 
             // Rows from the user's preferred repository (if any) always win
-            builder += """MAX((preferred.${Schema.PreferredRepository.ROW_REPOSITORY_ID} IS NULL OR
-        preferred.${Schema.PreferredRepository.ROW_REPOSITORY_ID} = product.${Schema.Product.ROW_REPOSITORY_ID}) ||
-        (product.${Schema.Product.ROW_COMPATIBLE} AND
-        (installed.${Schema.Installed.ROW_SIGNATURE} IS NULL OR $signatureMatches)) ||
+            builder += """MAX(COALESCE((preferred.${Schema.PreferredRepository.ROW_REPOSITORY_ID} IS NULL OR
+        preferred.${Schema.PreferredRepository.ROW_REPOSITORY_ID} = product.${Schema.Product.ROW_REPOSITORY_ID}), 1) ||
+        COALESCE((product.${Schema.Product.ROW_COMPATIBLE} AND
+        (installed.${Schema.Installed.ROW_SIGNATURE} IS NULL OR $signatureMatches)), 0) ||
         PRINTF('%016X', product.${Schema.Product.ROW_VERSION_CODE})) FROM ${Schema.Product.name} AS product"""
             builder += """JOIN ${Schema.Repository.name} AS repository
         ON product.${Schema.Product.ROW_REPOSITORY_ID} = repository.${Schema.Repository.ROW_ID}"""

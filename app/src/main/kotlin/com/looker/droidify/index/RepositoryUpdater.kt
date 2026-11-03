@@ -480,15 +480,14 @@ object RepositoryUpdater {
         val firstSelected =
             releasePairs.firstOrNull { it.second.isEmpty() && predicate(it.first) }
                 ?: releasePairs.firstOrNull { predicate(it.first) }
+                ?: releasePairs.firstOrNull { it.second.isEmpty() }
+                ?: releasePairs.firstOrNull()
 
         val releases = releasePairs
             .map { (release, incompatibilities) ->
                 release.copy(
                     incompatibilities = incompatibilities,
-                    selected = firstSelected?.let {
-                        it.first.versionCode == release.versionCode &&
-                            it.second == incompatibilities
-                    } ?: false,
+                    selected = firstSelected?.first?.identifier == release.identifier,
                 )
             }
         return product.copy(releases = releases)
