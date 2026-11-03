@@ -16,8 +16,15 @@ import com.looker.droidify.installer.model.InstallState
 import com.looker.droidify.utility.common.SdkCheck
 import com.looker.droidify.utility.common.cache.Cache
 import com.looker.droidify.utility.common.sdkAbove
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
+
+private class PendingSessionInstall(
+    val installer: PackageInstaller,
+    val callback: PackageInstaller.SessionCallback,
+    val onResult: (Boolean) -> Unit,
+)
 
 class SessionInstaller(private val context: Context) : Installer {
 
@@ -26,6 +33,32 @@ class SessionInstaller(private val context: Context) : Installer {
 
     companion object {
         private val flags = if (SdkCheck.isSnowCake) PendingIntent.FLAG_MUTABLE else 0
+
+        // Committed sessions of this process still waiting for a result, by session id
+        private val pendingSessions = ConcurrentHashMap<Int, PendingSessionInstall>()
+
+        /**
+         * Completes the install waiting on [sessionId]. Safe to call several times (session
+         * callback, status broadcast): only the first call has an effect.
+         */
+        fun onSessionFinished(sessionId: Int, success: Boolean) {
+            val pending = pendingSessions.remove(sessionId) ?: return
+            pending.installer.unregisterSessionCallback(pending.callback)
+            pending.onResult(success)
+        }
+
+        /**
+         * Abandons [sessionId] and fails the install waiting on it.
+         */
+        fun abandon(sessionId: Int) {
+            val pending = pendingSessions[sessionId] ?: return
+            try {
+                pending.installer.abandonSession(sessionId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            onSessionFinished(sessionId, false)
+        }
     }
 
     override suspend fun install(
@@ -44,13 +77,12 @@ class SessionInstaller(private val context: Context) : Installer {
             override fun onActiveChanged(sessionId: Int, active: Boolean) {}
             override fun onProgressChanged(sessionId: Int, progress: Float) {}
             override fun onFinished(sessionId: Int, success: Boolean) {
-                if (sessionId != id || !cont.isActive) return
-                installer.unregisterSessionCallback(this)
-                cont.resume(if (success) InstallState.Installed else InstallState.Failed)
+                if (sessionId == id) onSessionFinished(id, success)
             }
         }
 
         cont.invokeOnCancellation {
+            pendingSessions.remove(id)
             installer.unregisterSessionCallback(callback)
             try {
                 installer.abandonSession(id)
@@ -59,24 +91,40 @@ class SessionInstaller(private val context: Context) : Installer {
             }
         }
 
+        pendingSessions[id] = PendingSessionInstall(installer, callback) { success ->
+            if (cont.isActive) {
+                cont.resume(if (success) InstallState.Installed else InstallState.Failed)
+            }
+        }
         installer.registerSessionCallback(callback, Handler(Looper.getMainLooper()))
 
-        val session = installer.openSession(id)
+        try {
+            val session = installer.openSession(id)
 
-        session.use { activeSession ->
-            val sizeBytes = cacheFile.length()
-            cacheFile.inputStream().use { fileStream ->
-                activeSession.openWrite(cacheFile.name, 0, sizeBytes).use { outputStream ->
-                    if (cont.isActive) {
-                        fileStream.copyTo(outputStream)
-                        activeSession.fsync(outputStream)
+            session.use { activeSession ->
+                val sizeBytes = cacheFile.length()
+                cacheFile.inputStream().use { fileStream ->
+                    activeSession.openWrite(cacheFile.name, 0, sizeBytes).use { outputStream ->
+                        if (cont.isActive) {
+                            fileStream.copyTo(outputStream)
+                            activeSession.fsync(outputStream)
+                        }
                     }
                 }
+
+                val pendingIntent = PendingIntent.getBroadcast(context, id, intent, flags)
+
+                if (cont.isActive) activeSession.commit(pendingIntent.intentSender)
             }
-
-            val pendingIntent = PendingIntent.getBroadcast(context, id, intent, flags)
-
-            if (cont.isActive) activeSession.commit(pendingIntent.intentSender)
+        } catch (e: Exception) {
+            pendingSessions.remove(id)
+            installer.unregisterSessionCallback(callback)
+            try {
+                installer.abandonSession(id)
+            } catch (abandonError: Exception) {
+                abandonError.printStackTrace()
+            }
+            throw e
         }
     }
 

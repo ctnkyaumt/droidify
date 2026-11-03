@@ -32,19 +32,37 @@ class SessionInstallerReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -1)
 
+        val sessionId = intent.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, -1)
+        val isUninstall = intent.getBooleanExtra(ACTION_UNINSTALL, false)
+
         if (status == PackageInstaller.STATUS_PENDING_USER_ACTION) {
             // prompts user to enable unknown source
             val promptIntent: Intent? = intent.getParcelableExtraCompat(Intent.EXTRA_INTENT)
 
-            promptIntent?.let {
-                it.putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
-                it.putExtra(Intent.EXTRA_INSTALLER_PACKAGE_NAME, "com.android.vending")
-                it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            if (promptIntent == null) {
+                // Nothing to show, the session would wait forever
+                if (!isUninstall && sessionId != -1) SessionInstaller.abandon(sessionId)
+                return
+            }
+            promptIntent.putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
+            promptIntent.putExtra(Intent.EXTRA_INSTALLER_PACKAGE_NAME, "com.android.vending")
+            promptIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
-                context.startActivity(it)
+            try {
+                context.startActivity(promptIntent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                if (!isUninstall && sessionId != -1) SessionInstaller.abandon(sessionId)
             }
         } else {
             notifyStatus(intent, context)
+            // Finishes the waiting install even if the session callback is never delivered
+            if (!isUninstall && sessionId != -1) {
+                SessionInstaller.onSessionFinished(
+                    sessionId = sessionId,
+                    success = status == PackageInstaller.STATUS_SUCCESS,
+                )
+            }
         }
     }
 
@@ -90,7 +108,11 @@ class SessionInstallerReceiver : BroadcastReceiver() {
                 }
 
                 else -> {
-                    installManager.remove(packageName.toPackageName())
+                    if (isUninstall) {
+                        installManager.remove(packageName.toPackageName())
+                    } else {
+                        installManager.setFailed(packageName.toPackageName())
+                    }
                     val errorDesc = when (status) {
                         PackageInstaller.STATUS_FAILURE_STORAGE ->
                             context.getString(R.string.insufficient_storage_DESC)

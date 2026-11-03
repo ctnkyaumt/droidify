@@ -371,13 +371,14 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
         }
     }
 
+    private fun InstallState?.toAdapterStatus(): AppDetailAdapter.Status = when (this) {
+        InstallState.Pending -> AppDetailAdapter.Status.PendingInstall
+        InstallState.Installing -> AppDetailAdapter.Status.Installing
+        else -> AppDetailAdapter.Status.Idle
+    }
+
     private fun updateInstallState(installerState: InstallState?) {
-        val status = when (installerState) {
-            InstallState.Pending -> AppDetailAdapter.Status.PendingInstall
-            InstallState.Installing -> AppDetailAdapter.Status.Installing
-            else -> AppDetailAdapter.Status.Idle
-        }
-        (recyclerView?.adapter as? AppDetailAdapter)?.status = status
+        (recyclerView?.adapter as? AppDetailAdapter)?.status = installerState.toAdapterStatus()
         installing = installerState
         updateButtons()
     }
@@ -388,6 +389,10 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
         val isDownloading = state isDownloading packageName
         val isCompleted = state isComplete packageName
         val isActive = isPending || isDownloading
+        // A download success stays as the service's current item until the next download, so
+        // once the install manager has a state for this package (queued, installing, failed,
+        // installed), that state is authoritative and the success must not be acted on again.
+        val installerState = viewModel.currentInstallState()
         if (isPending) {
             detailAdapter?.status = AppDetailAdapter.Status.Pending
         }
@@ -403,9 +408,11 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
             }
         }
         if (isCompleted) {
-            if (state.currentItem is DownloadService.State.Success) {
+            if (state.currentItem is DownloadService.State.Success && installerState == null) {
                 installing = InstallState.Pending
                 detailAdapter?.status = AppDetailAdapter.Status.PendingInstall
+            } else if (state.currentItem is DownloadService.State.Success) {
+                updateInstallState(installerState)
             } else {
                 detailAdapter?.status = AppDetailAdapter.Status.Idle
             }
@@ -416,6 +423,7 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
         }
         if (state.currentItem is DownloadService.State.Success &&
             state.currentItem.packageName == viewModel.packageName &&
+            installerState == null &&
             isResumed
         ) {
             installing = InstallState.Pending
@@ -446,6 +454,7 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
                     ).show()
                     return
                 }
+                viewModel.clearFinishedInstall()
                 downloadConnection.startUpdate(
                     packageName = viewModel.packageName,
                     installedItem = installed?.installedItem,

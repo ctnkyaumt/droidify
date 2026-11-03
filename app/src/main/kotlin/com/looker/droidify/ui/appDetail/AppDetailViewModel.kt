@@ -33,7 +33,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine as combineFlow
-import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
@@ -52,9 +52,16 @@ class AppDetailViewModel @Inject constructor(
         savedStateHandle.getStateFlow(ARG_REPO_ADDRESS, null)
 
     val installerState: StateFlow<InstallState?> =
-        installer.state.mapNotNull { stateMap ->
+        installer.state.map { stateMap ->
             stateMap[packageName.toPackageName()]
         }.asStateFlow(null)
+
+    /**
+     * Current install state of this package straight from [InstallManager], `null` when
+     * nothing was queued (or the queued item was removed).
+     */
+    fun currentInstallState(): InstallState? =
+        installer.state.value[packageName.toPackageName()]
 
     val customButtons: StateFlow<List<CustomButton>> = customButtonRepository.buttons
         .asStateFlow(emptyList())
@@ -155,6 +162,17 @@ class AppDetailViewModel @Inject constructor(
     fun uninstallPackage() {
         viewModelScope.launch {
             installer uninstall packageName.toPackageName()
+        }
+    }
+
+    /**
+     * Forgets a finished (failed or installed) install of this package so that a new
+     * download of it is treated as a fresh install request.
+     */
+    fun clearFinishedInstall() {
+        val state = currentInstallState()
+        if (state == InstallState.Failed || state == InstallState.Installed) {
+            installer remove packageName.toPackageName()
         }
     }
 
