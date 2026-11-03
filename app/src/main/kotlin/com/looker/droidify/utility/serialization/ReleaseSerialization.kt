@@ -46,6 +46,10 @@ fun Release.serialize(generator: JsonGenerator) {
                         writeStringField(INCOMPATIBILITY_TYPE, MAX_SDK)
                     }
 
+                    is Release.Incompatibility.TargetSdk -> {
+                        writeStringField(INCOMPATIBILITY_TYPE, TARGET_SDK)
+                    }
+
                     is Release.Incompatibility.Platform -> {
                         writeStringField(INCOMPATIBILITY_TYPE, PLATFORM)
                     }
@@ -123,6 +127,7 @@ fun JsonParser.release(): Release {
                         when (type) {
                             MIN_SDK -> Release.Incompatibility.MinSdk
                             MAX_SDK -> Release.Incompatibility.MaxSdk
+                            TARGET_SDK -> Release.Incompatibility.TargetSdk
                             PLATFORM -> Release.Incompatibility.Platform
                             INCOMPATIBILITY_FEATURE -> Release.Incompatibility.Feature(feature)
                             else -> null
@@ -188,4 +193,5 @@ private const val INCOMPATIBILITY_TYPE = "type"
 private const val INCOMPATIBILITY_FEATURE = "feature"
 private const val MIN_SDK = "minSdk"
 private const val MAX_SDK = "maxSdk"
+private const val TARGET_SDK = "targetSdk"
 private const val PLATFORM = "platform"

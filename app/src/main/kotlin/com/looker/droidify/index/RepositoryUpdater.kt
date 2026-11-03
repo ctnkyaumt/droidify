@@ -5,6 +5,7 @@ import androidx.core.net.toUri
 import com.looker.droidify.data.model.fingerprint
 import com.looker.droidify.database.Database
 import com.looker.droidify.github.GitHubRepositoryUpdater
+import com.looker.droidify.model.Compatibility
 import com.looker.droidify.model.Product
 import com.looker.droidify.model.Release
 import com.looker.droidify.model.Repository
@@ -458,21 +459,13 @@ object RepositoryUpdater {
             .distinctBy { it.identifier }
             .sortedByDescending { it.versionCode }
             .map { release ->
-                val incompatibilities = mutableListOf<Release.Incompatibility>()
-                if (release.minSdkVersion > 0 && SdkCheck.sdk < release.minSdkVersion) {
-                    incompatibilities += Release.Incompatibility.MinSdk
-                }
-                if (release.maxSdkVersion > 0 && SdkCheck.sdk > release.maxSdkVersion) {
-                    incompatibilities += Release.Incompatibility.MaxSdk
-                }
-                if (release.platforms.isNotEmpty() &&
-                    (release.platforms intersect Android.platforms).isEmpty()
-                ) {
-                    incompatibilities += Release.Incompatibility.Platform
-                }
-                incompatibilities += (release.features - features).sorted()
-                    .map { Release.Incompatibility.Feature(it) }
-                Pair(release, incompatibilities.toList())
+                val incompatibilities = Compatibility.computeIncompatibilities(
+                    release = release,
+                    deviceSdk = SdkCheck.sdk,
+                    devicePlatforms = Android.platforms,
+                    deviceFeatures = features,
+                )
+                Pair(release, incompatibilities)
             }
 
         val predicate: (Release) -> Boolean = {

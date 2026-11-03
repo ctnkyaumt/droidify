@@ -147,6 +147,14 @@ class MessageDialog() : DialogFragment() {
                         ),
                     ).append("\n\n")
                 }
+                if (Release.Incompatibility.TargetSdk in message.incompatibilities) {
+                    builder.append(
+                        getString(
+                            stringRes.incompatible_target_sdk_DESC_FORMAT,
+                            message.targetSdkVersion,
+                        ),
+                    ).append("\n\n")
+                }
                 if (Release.Incompatibility.Platform in message.incompatibilities) {
                     builder.append(
                         getString(
@@ -216,6 +224,7 @@ sealed interface Message : Parcelable {
         val platforms: List<String>,
         val minSdkVersion: Int,
         val maxSdkVersion: Int,
+        val targetSdkVersion: Int = 0,
     ) : Message
 
     @Parcelize
@@ -236,6 +245,7 @@ class ReleaseIncompatibilityParceler : Parceler<Release.Incompatibility> {
         const val MAX_SDK_INDEX = 1
         const val PLATFORM_INDEX = 2
         const val FEATURE_INDEX = 3
+        const val TARGET_SDK_INDEX = 4
     }
 
     override fun create(parcel: Parcel): Release.Incompatibility {
@@ -244,6 +254,7 @@ class ReleaseIncompatibilityParceler : Parceler<Release.Incompatibility> {
             MAX_SDK_INDEX -> Release.Incompatibility.MaxSdk
             PLATFORM_INDEX -> Release.Incompatibility.Platform
             FEATURE_INDEX -> Release.Incompatibility.Feature(requireNotNull(parcel.readString()))
+            TARGET_SDK_INDEX -> Release.Incompatibility.TargetSdk
             else -> error("Invalid Index for Incompatibility")
         }
     }
@@ -265,6 +276,10 @@ class ReleaseIncompatibilityParceler : Parceler<Release.Incompatibility> {
             is Release.Incompatibility.Feature -> {
                 parcel.writeInt(FEATURE_INDEX)
                 parcel.writeString(feature)
+            }
+
+            is Release.Incompatibility.TargetSdk -> {
+                parcel.writeInt(TARGET_SDK_INDEX)
             }
         }
     }

@@ -15,6 +15,7 @@ import android.text.SpannableStringBuilder
 import android.text.method.LinkMovementMethod
 import android.text.style.RelativeSizeSpan
 import android.text.style.ReplacementSpan
+import android.text.format.DateUtils
 import android.text.style.TypefaceSpan
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -80,6 +81,7 @@ import com.looker.droidify.utility.extension.android.Android
 import com.looker.droidify.utility.extension.resources.TypefaceExtra
 import com.looker.droidify.utility.extension.resources.sizeScaled
 import com.looker.droidify.utility.text.formatHtml
+import com.looker.droidify.utility.text.markdownOrHtmlToHtml
 import com.looker.droidify.widget.StableRecyclerAdapter
 import java.util.*
 import kotlin.math.PI
@@ -193,6 +195,7 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
         ),
         TRACKER(drawableRes.ic_bug_report, stringRes.bug_tracker),
         CHANGELOG(drawableRes.ic_history, stringRes.changelog),
+        TRANSLATION(drawableRes.ic_public, stringRes.translation),
         WEB(drawableRes.ic_public, stringRes.project_website),
     }
 
@@ -986,9 +989,19 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
             items += Item.TextItem(TextType.ANTI_FEATURES, antiFeaturesText)
         }
 
-        val changes = productRepository.first.whatsNew
-        if (changes.isNotEmpty()) {
+        val rawChanges = productRepository.first.whatsNew
+        if (rawChanges.isNotEmpty()) {
             items += Item.SectionItem(SectionType.CHANGES)
+            val changes = formatHtml(markdownOrHtmlToHtml(rawChanges)) { url ->
+                val uri = try {
+                    url.toUri()
+                } catch (_: Exception) {
+                    null
+                }
+                if (uri != null) {
+                    callbacks.onUriClick(uri, true)
+                }
+            }
             val cropped =
                 if (ExpandType.CHANGES !in expanded) {
                     changes.lineCropped(12, 10)
@@ -1041,6 +1054,13 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
             changelog.nullIfEmpty()?.let {
                 linkItems += Item.LinkItem.Typed(
                     linkType = LinkType.CHANGELOG,
+                    text = "",
+                    uri = it.toUri(),
+                )
+            }
+            translation.nullIfEmpty()?.let {
+                linkItems += Item.LinkItem.Typed(
+                    linkType = LinkType.TRANSLATION,
                     text = "",
                     uri = it.toUri(),
                 )
@@ -1851,7 +1871,13 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
 
                 holder.source.text =
                     context.getString(stringRes.provided_by_FORMAT, item.repository.name)
-                holder.added.text = formatDate(item.release.added)
+                val date = formatDate(item.release.added)
+                val relative = if (item.release.added > 0L) {
+                    DateUtils.getRelativeTimeSpanString(item.release.added)
+                } else {
+                    null
+                }
+                holder.added.text = if (relative != null) "$date ($relative)" else date
                 holder.size.text = DataSize(item.release.size).toString()
                 holder.signature.isVisible =
                     item.showSignature && item.release.signature.isNotEmpty()
@@ -1876,6 +1902,11 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
                                 -> context.getString(
                                 stringRes.incompatible_with_FORMAT,
                                 Android.name,
+                            )
+
+                            is Release.Incompatibility.TargetSdk -> context.getString(
+                                stringRes.incompatible_target_sdk_FORMAT,
+                                item.release.targetSdkVersion,
                             )
 
                             is Release.Incompatibility.Platform -> context.getString(

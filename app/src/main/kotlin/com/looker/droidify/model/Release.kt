@@ -30,6 +30,7 @@ data class Release(
     sealed class Incompatibility {
         object MinSdk : Incompatibility()
         object MaxSdk : Incompatibility()
+        object TargetSdk : Incompatibility()
         object Platform : Incompatibility()
         class Feature(val feature: String) : Incompatibility()
     }
