@@ -251,12 +251,9 @@
     <string name="copy_error_details">Kopēt kļūdas informāciju</string>
     <string name="copied_to_clipboard">Nokopēta</string>
     <string name="total_downloads">Kopējais lejupielāžu skaits</string>
-    <string name="download_stats">Lejupielādes statistika</string>
-    <string name="download_stats_from_izzy">Avots: IzzyOnDroid</string>
     <string name="total">Kopā</string>
     <string name="by_client">Pēc klienta</string>
     <string name="monthly">Mēnesī</string>
-    <string name="downloading_download_stats">Lejupielādē lejupielādes statistiku</string>
     <string name="custom_buttons">Pielāgotas pogas</string>
     <string name="custom_buttons_description">Pievieno ātrās saites uz ārējiem pakalpojumiem lietotņu informācijas sadaļā</string>
     <string name="custom_button_add">Pievienot pogu</string>

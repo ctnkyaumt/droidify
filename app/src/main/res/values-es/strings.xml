@@ -248,13 +248,10 @@
     <string name="rb_badge">Insignia de construcción reproducible</string>
     <string name="rb_info">Si una compilación es reproducible, significa que la apk dada se compila a partir de la fuente proporcionada</string>
     <string name="total_downloads">Descargas totales</string>
-    <string name="download_stats">Estadísticas de descarga</string>
-    <string name="download_stats_from_izzy">Fuente: IzzyOnDroid</string>
     <string name="total">Total</string>
     <string name="by_client">Por Cliente</string>
     <string name="monthly">Mensual</string>
     <string name="downloading_rb_logs">Descargando registros de reproducibilidad</string>
-    <string name="downloading_download_stats">Descargando estadísticas de descargas</string>
     <string name="title_activity_main_compose">MainComposeActivity</string>
     <string name="requires_authentication">¿Requiere autenticación?</string>
     <string name="force_sync_repositories">Forzar sincronización de repositorios</string>
@@ -279,7 +276,6 @@
     <string name="copied_to_clipboard">Copiado</string>
     <string name="custom_button_url_hint">https://example.com/{{package_name}}</string>
     <string name="proxy_restart_required">Se requiere reiniciar para que los cambios entren en vigor.</string>
-    <string name="tap_to_resume_updates">Abre la app para reanudar las actualizaciones</string>
     <string name="rb_badge_verified">Compilación reproducible verificada</string>
     <string name="rb_badge_non_reproducible">Construcción no reproducible</string>
     <string name="rb_badge_unknown">Estado desconocido</string>

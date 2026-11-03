@@ -252,13 +252,10 @@
     <string name="rb_badge">Odznak reprodukovatelného sestavení</string>
     <string name="rb_info">Pokud je sestavení reprodukovatelné, znamená to, že je daný soubor APK sestaven z poskytnutého zdroje</string>
     <string name="total_downloads">Celkem stažení</string>
-    <string name="download_stats">Statistika stahování</string>
-    <string name="download_stats_from_izzy">Zdroj: IzzyOnDroid</string>
     <string name="total">Celkem</string>
     <string name="by_client">Podle klienta</string>
     <string name="monthly">Měsíčně</string>
     <string name="downloading_rb_logs">Stahování protokolů o reprodukovatelnosti</string>
-    <string name="downloading_download_stats">Stahování statistik o stahování</string>
     <string name="delete_apk_on_install">Smazat APK po instalaci</string>
     <string name="delete_apk_on_install_summary">Automaticky smazat soubory APK po úspěšné instalaci</string>
     <string name="requires_authentication">Vyžaduje autentifikaci?</string>
@@ -282,7 +279,6 @@
     <string name="custom_buttons_imported">Vlastní tlačítka importována</string>
     <string name="copied_to_clipboard">Zkopírováno</string>
     <string name="proxy_restart_required">Pro použití změn je vyžadován restart.</string>
-    <string name="tap_to_resume_updates">Otevřete aplikaci pro pokračování v aktualizacích</string>
     <string name="rb_badge_verified">Ověřené reprodukovatelné sestavení</string>
     <string name="rb_badge_non_reproducible">Nereprodukovatelné sestavení</string>
     <string name="rb_badge_unknown">Neznámý stav</string>

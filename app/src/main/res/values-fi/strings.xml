@@ -240,11 +240,8 @@
     <string name="delete_apk_on_install">Poista APK asennuksessa</string>
     <string name="title_activity_main_compose">MainComposeActivity</string>
     <string name="total_downloads">Latauksia yhteensä</string>
-    <string name="download_stats">Lataustilastot</string>
-    <string name="download_stats_from_izzy">Lähde: IzzyOnDroid</string>
     <string name="total">Yhteensä</string>
     <string name="monthly">Kuukausittain</string>
-    <string name="downloading_download_stats">Ladataan lataustilastoja</string>
     <string name="custom_buttons">Muokatut painikkeet</string>
     <string name="custom_buttons_description">Lisää pikalinkkejä ulkoisiin palveluihin sovelluksen asetuksissa</string>
     <string name="custom_button_add">Lisää painike</string>

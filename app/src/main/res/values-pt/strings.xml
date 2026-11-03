@@ -247,12 +247,9 @@
     <string name="repository_not_found_by_id">Repositório não encontrado</string>
     <string name="rb_badge">Insígnia de compilação reproduzível</string>
     <string name="total_downloads">Número de descargas</string>
-    <string name="download_stats">Estatísticas de descargas</string>
-    <string name="download_stats_from_izzy">Origem: IzzyOnDroid</string>
     <string name="total">Total</string>
     <string name="by_client">Do cliente</string>
     <string name="monthly">Mensalmente</string>
-    <string name="downloading_download_stats">A descarregar estatísticas</string>
     <string name="delete_apk_on_install">Eliminar APK após a instalação</string>
     <string name="delete_apk_on_install_summary">Eliminar ficheiro APK após a instalação com sucesso</string>
     <string name="requires_authentication">Requer autenticação?</string>
@@ -278,7 +275,6 @@
     <string name="rb_info">Se a complicação puder ser reproduzida, isto significa que a apk foi compilada através do código fonte</string>
     <string name="downloading_rb_logs">A descarregar registos de reprodutibilidade</string>
     <string name="proxy_restart_required">Reinicie a aplicação para aplicar as alterações.</string>
-    <string name="tap_to_resume_updates">Abra a aplicação para retomar as atualizações</string>
     <string name="title_activity_main_compose">MainComposeActivity</string>
     <string name="rb_badge_unknown">Estado desconhecido</string>
     <string name="rb_what_is">O que são compilações reproduzíveis?</string>

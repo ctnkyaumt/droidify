@@ -254,7 +254,6 @@
     <string name="repository_not_found_by_id">Рэпазіторый не знойдзены</string>
     <string name="copy_error_details">Скапіяваць падрабязнасці памылкі</string>
     <string name="copied_to_clipboard">Скапіявана</string>
-    <string name="tap_to_resume_updates">Адкрыйце праграму, каб аднавіць абнаўленні</string>
     <string name="rb_badge">Значок узнаўляльнай зборкі</string>
     <string name="rb_badge_verified">Пацверджаная узнаўляльная зборка</string>
     <string name="rb_badge_non_reproducible">Неўзнаўляльная зборка</string>
@@ -263,13 +262,10 @@
     <string name="rb_what_is">Што такое ўзнаўляльныя зборкі?</string>
     <string name="rb_info">Калі зборка ўзнаўляльная, гэта азначае, што дадзены APK-файл сабраны з нададзенага зыходнага кода</string>
     <string name="total_downloads">Усяго спамповак</string>
-    <string name="download_stats">Статыстыка спамповак</string>
-    <string name="download_stats_from_izzy">Крыніца: IzzyOnDroid</string>
     <string name="total">Усяго</string>
     <string name="by_client">Паводле кліентаў</string>
     <string name="monthly">Штомесяц</string>
     <string name="downloading_rb_logs">Спампоўванне логаў адтваральнасці</string>
-    <string name="downloading_download_stats">Спампоўванне статыстыкі спамповак</string>
     <string name="download_statistics_summary">Атрымліваць і паказваць штомесячную колькасць спамповак з IzzyOnDroid. Адключэнне ачышчае наяўную статыстыку спамповак.</string>
     <string name="reproducibility_logs">Логі адтваральнасці</string>
     <string name="reproducibility_logs_summary">Атрымліваць і паказваць логі праверкі адтваральнасці зборак з IzzyOnDroid. Адключэнне ачышчае наяўныя логі адтваральнасці.</string>

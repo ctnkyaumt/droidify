@@ -239,8 +239,6 @@
     <string name="label_sdk_version">Zielversion: Android %1$s | Minimum: Android %2$s</string>
     <string name="select_installer">Installationsmethode wählen</string>
     <string name="monthly">Monatlich</string>
-    <string name="download_stats_from_izzy">Quelle: IzzyOnDroid</string>
-    <string name="download_stats">Statistiken herunterladen</string>
     <string name="repository_not_synced_or_enabled">Paketquelle weder aktiviert noch synchronisiert</string>
     <string name="action_sync_repo">Synchronisieren</string>
     <string name="action_enable_repo">Aktivieren</string>
@@ -251,7 +249,6 @@
     <string name="rb_badge">Reproduzierbares Build-Badge</string>
     <string name="rb_info">Wenn ein Build reproduzierbar ist, bedeutet dies, dass die angegebene APK-Datei aus der bereitgestellten Quelle erstellt wurde</string>
     <string name="downloading_rb_logs">Reproduzierbarkeitsprotokolle werden heruntergeladen</string>
-    <string name="downloading_download_stats">Downloadstatistiken werden heruntergeladen</string>
     <string name="requires_authentication">Authentifizierung erforderlich?</string>
     <string name="copy_error_details">Fehlerdetails kopieren</string>
     <string name="force_sync_repositories">Paketquellen synchronisieren erzwingen</string>
@@ -276,7 +273,6 @@
     <string name="copied_to_clipboard">Kopiert</string>
     <string name="title_activity_main_compose">MainComposeActivity</string>
     <string name="proxy_restart_required">Neustart erforderlich, damit die Änderungen wirksam werden.</string>
-    <string name="tap_to_resume_updates">Die App öffnen, um die Updates fortzusetzen</string>
     <string name="rb_badge_unknown">Unbekannter Status</string>
     <string name="rb_badge_no_data">Keine Daten für reproduzierbaren Build</string>
     <string name="rb_what_is">Was sind reproduzierbare Builds?</string>

@@ -242,8 +242,6 @@
     <string name="rb_badge">Lencana build yang dapat direproduksi</string>
     <string name="rb_info">Jika suatu build dapat direproduksi, itu berarti apk yang diberikan telah dibuat dari kode sumber yang disediakan</string>
     <string name="total_downloads">Total unduhan</string>
-    <string name="download_stats">Statistik Unduhan</string>
-    <string name="download_stats_from_izzy">Sumber: IzzyOnDroid</string>
     <string name="total">Total</string>
     <string name="by_client">Oleh Klien</string>
     <string name="monthly">Bulanan</string>
@@ -254,7 +252,6 @@
     <string name="force_sync_repositories">Paksa sinkron repositori</string>
     <string name="copy_error_details">Salin detail error</string>
     <string name="downloading_rb_logs">Unduh log reproduksibilitas</string>
-    <string name="downloading_download_stats">Mengunduh unduhan stats</string>
     <string name="custom_buttons">Tombol kustom</string>
     <string name="custom_buttons_description">Tambahkan tautan cepat ke layanan eksternal di detail aplikasi</string>
     <string name="custom_buttons_section">Tautan detail aplikasi</string>
@@ -273,7 +270,6 @@
     <string name="custom_buttons_imported">Tombol kustom diimpor</string>
     <string name="proxy_restart_required">Mulai ulang diperlukan agar perubahan diterapkan.</string>
     <string name="copied_to_clipboard">Disalin</string>
-    <string name="tap_to_resume_updates">Buka aplikasi untuk melanjutkan pembaruan</string>
     <string name="rb_badge_verified">Build yang dapat direproduksi terverifikasi</string>
     <string name="rb_badge_non_reproducible">Build yang tidak dapat direproduksi</string>
     <string name="rb_badge_unknown">Status tidak diketahui</string>

@@ -246,13 +246,10 @@
     <string name="rb_badge">Tekrarlanabilir build rozeti</string>
     <string name="rb_info">Bir build tekrarlanabiliyorsa, bu, verilen apk\'nın sağlanan kaynaktan derlendiği anlamına gelir</string>
     <string name="total_downloads">Toplam indirme</string>
-    <string name="download_stats">İstatistikleri İndir</string>
-    <string name="download_stats_from_izzy">Kaynak: IzzyOnDroid</string>
     <string name="total">Toplam</string>
     <string name="by_client">İstemciye Göre</string>
     <string name="monthly">Aylık</string>
     <string name="downloading_rb_logs">Tekrarlanabilirlik günlükleri indiriliyor</string>
-    <string name="downloading_download_stats">İndirme istatistikleri indiriliyor</string>
     <string name="requires_authentication">Doğrulama lazımmı?</string>
     <string name="force_sync_repositories">Depo senkronizasyonunu zorla</string>
     <string name="copy_error_details">Hata detaylarını kopyala</string>
@@ -276,7 +273,6 @@
     <string name="custom_buttons_import">Butonları içe aktar</string>
     <string name="custom_buttons_imported">Özel butonlar içe aktarıldı</string>
     <string name="proxy_restart_required">Değişikliklerin etkili olması için yeniden başlatma gerekli.</string>
-    <string name="tap_to_resume_updates">Güncellemeleri devam ettirmek için uygulamayı aç</string>
     <string name="rb_badge_verified">Doğrulanmış, tekrarlanabilir derleme</string>
     <string name="rb_badge_non_reproducible">Tekrarlanamaz derleme</string>
     <string name="rb_badge_unknown">Durum bilinmiyor</string>

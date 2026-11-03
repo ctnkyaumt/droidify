@@ -249,7 +249,6 @@
     <string name="force_sync_repositories">Επιβολή συγχρονισμού αποθετηρίων</string>
     <string name="copy_error_details">Αντιγραφή λεπτομερειών σφάλματος</string>
     <string name="copied_to_clipboard">Αντιγράφηκε</string>
-    <string name="tap_to_resume_updates">Ανοίξτε την εφαρμογή για να συνεχίσετε τις ενημερώσεις</string>
     <string name="title_activity_main_compose">MainComposeActivity</string>
     <string name="rb_badge">Ένδειξη αναπαράξιμης δομής</string>
     <string name="rb_badge_verified">Επαληθευμένη αναπαράξιμη δομή</string>
@@ -259,13 +258,10 @@
     <string name="rb_what_is">Τι είναι οι αναπαράξιμες δομές;</string>
     <string name="rb_info">Εάν μια δομή είναι αναπαράξιμη, αυτό σημαίνει ότι το δωσμένο apk είναι φτιαγμένο από την παρεχόμενη πηγή</string>
     <string name="total_downloads">Συνολικές λήψεις</string>
-    <string name="download_stats">Στατιστικά Λήψης</string>
-    <string name="download_stats_from_izzy">Πηγή: IzzyOnDroid</string>
     <string name="total">Σύνολο</string>
     <string name="by_client">Από Πελάτη</string>
     <string name="monthly">Μηνιαία</string>
     <string name="downloading_rb_logs">Κατεβάστε τις καταγραφές αναπαράξιμων</string>
-    <string name="downloading_download_stats">Λήψη στατιστικών λήψης</string>
     <string name="download_statistics_summary">Ανάκτηση και να εμφάνιση μηνιαίων λήψεων από IzzyOnDroid. Η απενεργοποίηση καθαρίζει τα υπάρχοντα στατιστικά λήψης.</string>
     <string name="reproducibility_logs">Καταγραφές Αναπαράξιμων</string>
     <string name="reproducibility_logs_summary">Ανάκτηση και εμφάνιση καταγραφών επαλήθευσης αναπαράξιμων δομών από IzzyOnDroid. Η απενεργοποίηση καθαρίζει τα υπάρχοντα αρχεία.</string>

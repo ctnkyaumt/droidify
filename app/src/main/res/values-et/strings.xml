@@ -251,9 +251,6 @@
     <string name="rb_badge">Tarkvara taasloodavuse märk</string>
     <string name="rb_info">Kui kooste on taasloodatav, tähendab see, et pakutav apk on koostatud esitatud lähtekoodist</string>
     <string name="total_downloads">Allalaadimisi kokku</string>
-    <string name="download_stats">Allalaadimiste statistika</string>
-    <string name="download_stats_from_izzy">Allikas: IzzyOnDroid</string>
-    <string name="downloading_download_stats">Allalaadimise statistika allalaadimine</string>
     <string name="total">Kokku</string>
     <string name="by_client">Kliendi järgi</string>
     <string name="monthly">Kuupõhine</string>

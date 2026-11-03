@@ -234,7 +234,6 @@
     <string name="syncing_FORMAT">Syncing %s…</string>
     <string name="system">System</string>
     <string name="tap_to_install_DESC">Tap to install</string>
-    <string name="tap_to_resume_updates">Open the app to resume updates</string>
     <string name="background_updates_restricted_DESC">Background updates were blocked by the system. Tap to open Updates.</string>
     <string name="startup_tab">Startup tab</string>
     <string name="iso_date_format">ISO 8601 date format</string>
@@ -289,13 +288,10 @@
     <string name="rb_what_is">What is reproducible builds?</string>
     <string name="rb_info">If a build is reproducible, it means the given apk is build from the provided source</string>
     <string name="total_downloads">Total downloads</string>
-    <string name="download_stats">Download Statistics</string>
-    <string name="download_stats_from_izzy">Source: IzzyOnDroid</string>
     <string name="total">Total</string>
     <string name="by_client">By Client</string>
     <string name="monthly">Monthly</string>
     <string name="downloading_rb_logs">Downloading reproducibility logs</string>
-    <string name="downloading_download_stats">Downloading download stats</string>
     <string name="download_statistics_summary">Fetch and display monthly download counts from IzzyOnDroid. Disabling clears existing download stats.</string>
     <string name="reproducibility_logs">Reproducibility Logs</string>
     <string name="reproducibility_logs_summary">Fetch and display reproducible build verification logs from IzzyOnDroid. Disabling clears existing reproducibility logs.</string>

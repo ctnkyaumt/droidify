@@ -249,13 +249,10 @@
     <string name="rb_badge">Insignă build reproductibil</string>
     <string name="rb_info">Dacă o generare este reproductibilă, atunci înseamnă că APK-ul primit a fost generat din codul sursă furnizat</string>
     <string name="total_downloads">Descărcări totale</string>
-    <string name="download_stats">Statistici pentru descărcări</string>
-    <string name="download_stats_from_izzy">Sursă: IzzyOnDroid</string>
     <string name="total">Total</string>
     <string name="by_client">După client</string>
     <string name="monthly">Lunare</string>
     <string name="downloading_rb_logs">Descărcați jurnalele pentru reproductibilitate</string>
-    <string name="downloading_download_stats">Descărcați statisticile pentru descărcări</string>
     <string name="delete_apk_on_install">Șterge APK-urile la instalare</string>
     <string name="delete_apk_on_install_summary">Șterge automat fișierele APK după instalări reușite</string>
     <string name="proxy_restart_required">Repornire necesară pentru ca modificările să aibă efect.</string>
@@ -263,7 +260,6 @@
     <string name="force_sync_repositories">Sincronizează forțat depozitele</string>
     <string name="copy_error_details">Copiază detaliile erorii</string>
     <string name="copied_to_clipboard">Copiate</string>
-    <string name="tap_to_resume_updates">Deschideți aplicația pentru a continua actualizările</string>
     <string name="rb_badge_verified">Generare reproductibilă verificată</string>
     <string name="rb_badge_non_reproducible">Generare nereproductibilă</string>
     <string name="rb_badge_unknown">Stare necunoscută</string>

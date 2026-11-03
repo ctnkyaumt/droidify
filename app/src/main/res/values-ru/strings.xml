@@ -252,13 +252,10 @@
     <string name="rb_badge">Значок воспроизводимой сборки</string>
     <string name="rb_info">Воспроизводимая сборка означает, что данный apk-файл собран из предоставленного исходного кода</string>
     <string name="total_downloads">Всего скачиваний</string>
-    <string name="download_stats">Статистика скачиваний</string>
-    <string name="download_stats_from_izzy">Источник: IzzyOnDroid</string>
     <string name="total">Всего</string>
     <string name="monthly">За месяц</string>
     <string name="by_client">Клиентом</string>
     <string name="downloading_rb_logs">Получение журналов воспроизводимости</string>
-    <string name="downloading_download_stats">Получение статистики скачиваний</string>
     <string name="requires_authentication">Требуется аутентификация?</string>
     <string name="force_sync_repositories">Принудительно синхронизировать репозитории</string>
     <string name="copy_error_details">Копировать данные ошибки</string>
@@ -282,7 +279,6 @@
     <string name="custom_buttons_imported">Пользовательские кнопки импортированы</string>
     <string name="copied_to_clipboard">Скопировано</string>
     <string name="proxy_restart_required">Для применения изменений требуется перезапуск.</string>
-    <string name="tap_to_resume_updates">Откройте приложение для возобновления обновления</string>
     <string name="rb_badge_non_reproducible">Невоспроизводимая сборка</string>
     <string name="rb_badge_unknown">Неизвестное состояние</string>
     <string name="rb_badge_no_data">Нет данных о воспроизводимости сборки</string>

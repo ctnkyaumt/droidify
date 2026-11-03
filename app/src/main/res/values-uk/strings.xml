@@ -252,13 +252,10 @@
     <string name="rb_badge">Значок відтворюваної збірки</string>
     <string name="rb_info">Якщо збірку можна відтворити, це означає, що даний apk зібрано з наданого вихідного коду</string>
     <string name="total_downloads">Загальна кількість завантажень</string>
-    <string name="download_stats">Завантажити статистику</string>
-    <string name="download_stats_from_izzy">Джерело: IzzyOnDroid</string>
     <string name="total">Всього</string>
     <string name="by_client">Клієнтом</string>
     <string name="monthly">Щомісяця</string>
     <string name="downloading_rb_logs">Завантаження журналів відтворюваності</string>
-    <string name="downloading_download_stats">Завантаження статистики завантажень</string>
     <string name="delete_apk_on_install">Видалити APK при встановленні</string>
     <string name="delete_apk_on_install_summary">Автоматично видаляти файли APK після успішного їх встановлення</string>
     <string name="requires_authentication">Потребує автентифікацію?</string>
@@ -266,7 +263,6 @@
     <string name="copy_error_details">Копіювати деталі помилки</string>
     <string name="proxy_restart_required">Аби зміни набули чинності, необхідно перезавантажити систему.</string>
     <string name="copied_to_clipboard">Скопійовано</string>
-    <string name="tap_to_resume_updates">Відкрийте застосунок, щоби відновити оновлення</string>
     <string name="rb_badge_verified">Перевірена відтворювана збірка</string>
     <string name="rb_badge_non_reproducible">Невідтворювана збірка</string>
     <string name="rb_badge_unknown">Невідомий стан</string>

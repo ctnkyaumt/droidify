@@ -248,10 +248,7 @@
     <string name="rb_badge">תג בנייה ניתן לשחזור</string>
     <string name="rb_info">אם בנייה ניתנת לשחזור, משמעות הדבר היא שה-apk הנתון נבנה מקוד המקור שסופק</string>
     <string name="total_downloads">סה״כ הורדות</string>
-    <string name="download_stats">סטטיסטיקת הורדות</string>
-    <string name="download_stats_from_izzy">מקור: IzzyOnDroid</string>
     <string name="total">סה״כ</string>
     <string name="monthly">חודשי</string>
     <string name="downloading_rb_logs">מוריד יומני שחזור בנייה</string>
-    <string name="downloading_download_stats">מוריד סטטיסטיקות הורדות</string>
 </resources>

@@ -246,13 +246,10 @@
     <string name="rb_badge">Значка за възпроизводима компилация</string>
     <string name="rb_info">Ако дадена компилация е възпроизводима, това означава, че даденият apk файл е компилиран от предоставения изходен код</string>
     <string name="total_downloads">Общо изтегляния</string>
-    <string name="download_stats">Статистика за изтегляне</string>
-    <string name="download_stats_from_izzy">Източник: IzzyOnDroid</string>
     <string name="total">Общо</string>
     <string name="by_client">От клиента</string>
     <string name="monthly">Месечно</string>
     <string name="downloading_rb_logs">Изтегляне на регистрационни файлове за възпроизводимост</string>
-    <string name="downloading_download_stats">Изтегляне на статистика за изтегляния</string>
     <string name="delete_apk_on_install">Изтриване на APK при инсталиране</string>
     <string name="delete_apk_on_install_summary">Автоматично изтриване на APK файлове след успешна инсталация</string>
     <string name="requires_authentication">Изисква се удостоверяване?</string>
@@ -276,7 +273,6 @@
     <string name="custom_buttons_import">Бутони за внасяне</string>
     <string name="custom_buttons_imported">Внасяне на персонализирани бутони</string>
     <string name="proxy_restart_required">Необходимо е рестартиране, за да влязат промените в сила.</string>
-    <string name="tap_to_resume_updates">Отворете приложението, за да възобновите актуализациите</string>
     <string name="rb_badge_verified">Проверена възпроизводима компилация</string>
     <string name="rb_badge_non_reproducible">Невъзпроизводима компилация</string>
     <string name="rb_badge_unknown">Неизвестно състояние</string>

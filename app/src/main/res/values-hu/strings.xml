@@ -246,13 +246,10 @@
     <string name="rb_badge">Reprodukálható összeállítási jelvény</string>
     <string name="rb_info">Ha egy összeállítás reprodukálható, az azt jelenti, hogy az adott apk a megadott forrásból lett összeállítva</string>
     <string name="total_downloads">Összes letöltés</string>
-    <string name="download_stats">Letöltési statisztikák</string>
-    <string name="download_stats_from_izzy">Forrás: IzzyOnDroid</string>
     <string name="total">Összesen</string>
     <string name="by_client">Kliens szerint</string>
     <string name="monthly">Havi</string>
     <string name="downloading_rb_logs">Reprodukálhatósági naplók letöltése</string>
-    <string name="downloading_download_stats">Letöltési statisztikák letöltése</string>
     <string name="requires_authentication">Hitelesítés szükséges?</string>
     <string name="force_sync_repositories">Tárolók kényszerített szinkronizálása</string>
     <string name="copy_error_details">Hiba részleteinek másolása</string>
@@ -276,7 +273,6 @@
     <string name="custom_buttons_imported">Egyéni gombok importálva</string>
     <string name="copied_to_clipboard">Másolva</string>
     <string name="proxy_restart_required">A módosítások érvényesítéséhez újraindítás szükséges.</string>
-    <string name="tap_to_resume_updates">Koppintson a frissítések folytatásához</string>
     <string name="rb_badge_verified">Ellenőrzött reprodukálható összeállítás</string>
     <string name="rb_badge_non_reproducible">Nem reprodukálható összeállítás</string>
     <string name="rb_badge_unknown">Ismeretlen állapot</string>

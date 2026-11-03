@@ -237,7 +237,6 @@
     <string name="label_unknown_sdk">Sconosciuto (%d)</string>
     <string name="unspecified">Non specificato</string>
     <string name="select_installer">Seleziona installatore</string>
-    <string name="download_stats_from_izzy">Fonte: IzzyOnDroid</string>
     <string name="monthly">Mensile</string>
     <string name="legacyInstallerComponent">Componente dell’installatore legacy</string>
     <string name="delete_apk_on_install">Elimina APK all’installazione</string>
@@ -257,11 +256,9 @@
     <string name="rb_badge">Badge di build riproducibile</string>
     <string name="rb_info">Se una build è riproducibile, significa che l’apk dato è compilato dalla sorgente fornita</string>
     <string name="total_downloads">Download totali</string>
-    <string name="download_stats">Statistiche di download</string>
     <string name="total">Totale</string>
     <string name="by_client">Per client</string>
     <string name="downloading_rb_logs">Scaricando i log di reproducibilità</string>
-    <string name="downloading_download_stats">Scaricando le statistiche di download</string>
     <string name="custom_buttons">Bottoni personalizzati</string>
     <string name="custom_buttons_description">Aggiungi collegamenti rapidi a servizi esterni nei dettagli dell’app</string>
     <string name="custom_buttons_section">Link dei dettagli dell’app</string>

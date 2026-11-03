@@ -248,13 +248,10 @@
     <string name="rb_badge">Badge de build reproductible</string>
     <string name="rb_info">Si une build est reproductible, cela veut dire que l\'APK donné a été build depuis la source fournie</string>
     <string name="total_downloads">Téléchargements totaux</string>
-    <string name="download_stats">Statistiques de téléchargements</string>
-    <string name="download_stats_from_izzy">Source : IzzyOnDroid</string>
     <string name="total">Total</string>
     <string name="by_client">Par le client</string>
     <string name="monthly">Mensuel</string>
     <string name="downloading_rb_logs">Téléchargement des logs de reproducibilité</string>
-    <string name="downloading_download_stats">Téléchargement des statistiques de téléchargements</string>
     <string name="title_activity_main_compose">MainComposeActivity</string>
     <string name="delete_apk_on_install">Supprimer APK après installation</string>
     <string name="delete_apk_on_install_summary">Supprimer automatiquement les fichiers APK après une installation réussie</string>
@@ -279,7 +276,6 @@
     <string name="custom_buttons_import">Importer boutons</string>
     <string name="custom_buttons_imported">Boutons persos importés</string>
     <string name="proxy_restart_required">Un redémarrage est nécessaire pour que les modifications prennent effet.</string>
-    <string name="tap_to_resume_updates">Ouvrez l\'application pour reprendre les mises à jour</string>
     <string name="rb_badge_verified">Build reproductible vérifié</string>
     <string name="rb_badge_non_reproducible">Build non reproductible</string>
     <string name="rb_badge_unknown">État inconnu</string>

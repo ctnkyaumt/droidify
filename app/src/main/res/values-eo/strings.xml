@@ -244,7 +244,6 @@
     <string name="force_sync_repositories">Devige sinkronigi deponejojn</string>
     <string name="copy_error_details">Kopii detalojn de eraro</string>
     <string name="copied_to_clipboard">Kopiita</string>
-    <string name="tap_to_resume_updates">Malfermi la aplikaĵon por daŭrigi ĝisdatigadon</string>
     <string name="label_open_video">Videaĵo</string>
     <string name="label_unknown_sdk">Nekonata (%d)</string>
     <string name="label_sdk_version">Celita versio: Android %1$s | Minimuma: Android %2$s</string>
@@ -259,13 +258,10 @@
     <string name="rb_what_is">Kio estas “reprodukteblaj kunmetaĵoj\"?</string>
     <string name="rb_info">Se kunmetaĵo estas reproduktebla, ĝi signifas, ke ties APK-dosiero estis kunmetita de la provizita fontkodo</string>
     <string name="total_downloads">Tuta nombro da elŝutoj</string>
-    <string name="download_stats">Statistikaĵoj de elŝutoj</string>
-    <string name="download_stats_from_izzy">Fonto: IzzyOnDroid</string>
     <string name="total">Tutaj</string>
     <string name="by_client">Po kliento</string>
     <string name="monthly">Monataj</string>
     <string name="downloading_rb_logs">Elŝutado de protokoloj de reproduktebleco</string>
-    <string name="downloading_download_stats">Elŝutado de statistikaĵoj de elŝutoj</string>
     <string name="download_statistics_summary">Elŝuti kaj montri po-monataj nombroj de elŝutoj el IzzyOnDroid. Malŝaltado forigas ekzistantajn statistikaĵojn.</string>
     <string name="reproducibility_logs">Protokoloj de reproduktebleco</string>
     <string name="reproducibility_logs_summary">Elŝuti kaj montri protokolojn de kontrolado de reproduktebla kunmetado el IzzyOnDroid. Malŝaltado forigas ekzistantajn protokolojn.</string>

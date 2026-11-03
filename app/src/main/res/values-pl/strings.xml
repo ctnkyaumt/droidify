@@ -271,13 +271,10 @@
     <string name="custom_buttons_imported">Zaimportowano przyciski niestandardowe</string>
     <string name="rb_info">Jeśli kompilacja jest odtwarzalna, to znaczy, że dany plik apk został skompilowany z dostarczonego źródła</string>
     <string name="total_downloads">Łączna liczba pobrań</string>
-    <string name="download_stats">Statystyki pobierania</string>
-    <string name="download_stats_from_izzy">Źródło: IzzyOnDroid</string>
     <string name="total">Łącznie</string>
     <string name="by_client">Według klienta</string>
     <string name="monthly">Miesięcznie</string>
     <string name="downloading_rb_logs">Pobieranie dzienników odtwarzalności</string>
-    <string name="downloading_download_stats">Pobieranie statystyk pobierania</string>
     <string name="custom_buttons">Niestandardowe przyciski</string>
     <string name="custom_buttons_description">Dodaj szybkie linki do usług zewnętrznych w szczegółach aplikacji</string>
     <string name="custom_buttons_section">Linki dotyczące szczegółów aplikacji</string>
