@@ -304,10 +304,14 @@ object RepositoryUpdater {
                                         version: Int,
                                         timestamp: Long,
                                     ) {
+                                        val defaultRepo = (Repository.defaultRepositories + Repository.newRepos())
+                                            .find { it.address == repository.address }
+                                        val resolvedName = defaultRepo?.name ?: name
+                                        val resolvedDescription = defaultRepo?.description ?: description
                                         changedRepository = repository.update(
                                             mirrors,
-                                            name,
-                                            description,
+                                            resolvedName,
+                                            resolvedDescription,
                                             version,
                                             lastModified,
                                             entityTag,
