@@ -50,6 +50,7 @@ data class Settings(
     val rbLogMirrorIndex: Int = 0,
     val favouriteApps: Set<String> = emptySet(),
     val homeScreenSwiping: Boolean = true,
+    val reduceAnimations: Boolean = false,
     val enabledRepoIds: Set<Int> = emptySet(),
     val deleteApkOnInstall: Boolean = false,
     val rbLogsEnabled: Boolean = true,

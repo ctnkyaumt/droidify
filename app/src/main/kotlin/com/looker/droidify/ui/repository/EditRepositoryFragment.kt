@@ -480,16 +480,34 @@ class EditRepositoryFragment() : ScreenFragment() {
     ): String? = coroutineScope {
         checkInProgress = true
         invalidateState()
-        val allAddresses = addressSuffixes.map { "$rawAddress/$it" } + rawAddress
-        allAddresses
-            .sortedBy { it.length }
-            .forEach { address ->
-                val response = downloader.headCall(
-                    url = "$address/index-v1.jar",
-                    headers = { authentication(authentication) },
-                )
-                if (response is NetworkResponse.Success) return@coroutineScope address
+        val candidates = linkedSetOf<String>()
+        candidates.add(rawAddress)
+        addressSuffixes.forEach { candidates.add("$rawAddress/$it") }
+        val cropped = rawAddress.pathCropped
+        for (suffix in addressSuffixes) {
+            val marker = "/$suffix"
+            if (cropped.contains(marker) && !cropped.endsWith(marker)) {
+                candidates.add(cropped.substringBefore(marker) + marker)
             }
+            if (cropped.contains(marker)) {
+                try {
+                    val u = URI(cropped)
+                    if (u.scheme != null && u.host != null) {
+                        val hostOnly = "${u.scheme}://${u.host}" + (if (u.port != -1) ":${u.port}" else "")
+                        candidates.add("$hostOnly/$suffix")
+                    }
+                } catch (_: Exception) {
+                }
+            }
+        }
+        val allAddresses = candidates.sortedBy { it.length }
+        allAddresses.forEach { address ->
+            val response = downloader.headCall(
+                url = "$address/index-v1.jar",
+                headers = { authentication(authentication) },
+            )
+            if (response is NetworkResponse.Success) return@coroutineScope address
+        }
         null
     }
 

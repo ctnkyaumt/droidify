@@ -22,9 +22,9 @@ import com.looker.droidify.data.model.Html
 fun Html.format(
     onUrlClick: ((String) -> Unit)? = null, // FIXME: Remove once legacy is removed
 ): SpannableStringBuilder {
-    if (isPlainText) return SpannableStringBuilder(toString())
-
-    val builder = run {
+    val builder = if (isPlainText) {
+        SpannableStringBuilder(toString())
+    } else {
         val builder = SpannableStringBuilder(toSpanned())
         val last = builder.indexOfLast { it != '\n' }
         val first = builder.indexOfFirst { it != '\n' }
@@ -40,7 +40,28 @@ fun Html.format(
         }.last()
     }
 
+    val existingSpans = if (!isPlainText) {
+        builder.getSpans(0, builder.length, URLSpan::class.java).orEmpty().map { span ->
+            val start = builder.getSpanStart(span)
+            val end = builder.getSpanEnd(span)
+            val flags = builder.getSpanFlags(span)
+            val url = span.url
+            builder.removeSpan(span)
+            SavedUrlSpan(url, start, end, flags)
+        }
+    } else {
+        emptyList()
+    }
+
     LinkifyCompat.addLinks(builder, Linkify.WEB_URLS or Linkify.EMAIL_ADDRESSES)
+
+    for (info in existingSpans) {
+        val overlapping = builder.getSpans(info.start, info.end, URLSpan::class.java).orEmpty()
+        for (span in overlapping) {
+            builder.removeSpan(span)
+        }
+        builder.setSpan(URLSpan(info.url), info.start, info.end, info.flags)
+    }
 
     if (onUrlClick != null) {
         val urlSpans = builder.getSpans(0, builder.length, URLSpan::class.java).orEmpty()
@@ -63,15 +84,17 @@ fun Html.format(
         }
     }
 
-    val bulletSpans = builder
-        .getSpans(0, builder.length, BulletSpan::class.java)
-        .orEmpty()
-        .asSequence()
-        .map { it to builder.getSpanStart(it) }
-        .sortedByDescending { it.second }
-    for ((span, start) in bulletSpans) {
-        builder.removeSpan(span)
-        builder.insert(start, "\u2022 ")
+    if (!isPlainText) {
+        val bulletSpans = builder
+            .getSpans(0, builder.length, BulletSpan::class.java)
+            .orEmpty()
+            .asSequence()
+            .map { it to builder.getSpanStart(it) }
+            .sortedByDescending { it.second }
+        for ((span, start) in bulletSpans) {
+            builder.removeSpan(span)
+            builder.insert(start, "\u2022 ")
+        }
     }
     return builder
 }
@@ -80,3 +103,10 @@ fun formatHtml(
     html: String,
     onUrlClick: ((String) -> Unit)?,
 ): SpannableStringBuilder = Html(html).format(onUrlClick)
+
+private data class SavedUrlSpan(
+    val url: String,
+    val start: Int,
+    val end: Int,
+    val flags: Int,
+)

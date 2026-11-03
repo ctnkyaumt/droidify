@@ -16,7 +16,7 @@ import com.looker.droidify.utility.serialization.repository
 
 private const val DB_LEGACY_NAME = "droidify"
 
-private const val DB_LEGACY_VERSION = 7
+private const val DB_LEGACY_VERSION = 8
 
 class DatabaseHelper(context: Context) :
     SQLiteOpenHelper(context, DB_LEGACY_NAME, null, DB_LEGACY_VERSION) {
@@ -40,6 +40,7 @@ class DatabaseHelper(context: Context) :
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         db.removeRepositories()
         db.migrateRepositories()
+        db.fixDefaultRepositoryMetadata()
         db.addNewlyAddedRepositories()
         db.addOemRepositories()
         this.updated = true
@@ -174,6 +175,41 @@ class DatabaseHelper(context: Context) :
                     "${Schema.Category.ROW_REPOSITORY_ID} = ?",
                     arrayOf(repo.id.toString()),
                 )
+            }
+        }
+    }
+
+    private fun SQLiteDatabase.fixDefaultRepositoryMetadata() {
+        val knownRepos = (Repository.defaultRepositories + Repository.newRepos()).associateBy { it.address }
+        val existingRepos = query(
+            Schema.Repository.name,
+            columns = arrayOf(Schema.Repository.ROW_ID, Schema.Repository.ROW_DATA),
+            selection = Pair("${Schema.Repository.ROW_DELETED} == 0", emptyArray()),
+            signal = null,
+        ).use { cursor ->
+            cursor.asSequence().mapNotNull {
+                val idIndex = it.getColumnIndexOrThrow(Schema.Repository.ROW_ID)
+                val dataIndex = it.getColumnIndexOrThrow(Schema.Repository.ROW_DATA)
+                val id = it.getLong(idIndex)
+                val data = it.getBlob(dataIndex)
+                try {
+                    data.jsonParse { json -> json.repository() }.copy(id = id)
+                } catch (_: Exception) {
+                    null
+                }
+            }.toList()
+        }
+
+        transaction {
+            existingRepos.forEach { repo ->
+                val template = knownRepos[repo.address]
+                if (template != null && (repo.name != template.name || repo.description != template.description)) {
+                    RepositoryAdapter.putWithoutNotification(
+                        repo.copy(name = template.name, description = template.description),
+                        true,
+                        this,
+                    )
+                }
             }
         }
     }

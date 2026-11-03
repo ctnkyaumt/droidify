@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Intent
 import android.content.IntentFilter
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import androidx.work.WorkManager
@@ -32,6 +33,7 @@ import com.looker.droidify.network.Downloader
 import com.looker.droidify.receivers.InstalledAppReceiver
 import com.looker.droidify.service.FailedUpdateTracker
 import com.looker.droidify.service.SyncService
+import com.looker.droidify.utility.AnimationHelper
 import com.looker.droidify.utility.DateFormatter
 import com.looker.droidify.utility.NotificationIconHelper
 import com.looker.droidify.utility.common.cache.Cache
@@ -48,6 +50,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectIndexed
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.INFINITE
 
@@ -113,8 +116,14 @@ class Droidify : Application(), SingletonImageLoader.Factory, Configuration.Prov
     private fun checkLanguage() {
         appScope.launch {
             val lastSetLanguage = settingsRepository.getInitial().language
-            val systemSetLanguage = AppCompatDelegate.getApplicationLocales().toLanguageTags()
-            if (systemSetLanguage != lastSetLanguage && lastSetLanguage != "system") {
+            val appLocales = AppCompatDelegate.getApplicationLocales()
+            val systemSetLanguage = appLocales.toLanguageTags()
+            if (lastSetLanguage.isNotBlank() && lastSetLanguage != "system" && systemSetLanguage.isEmpty()) {
+                withContext(Dispatchers.Main) {
+                    val locale = LocaleListCompat.forLanguageTags(lastSetLanguage)
+                    AppCompatDelegate.setApplicationLocales(locale)
+                }
+            } else if (systemSetLanguage != lastSetLanguage && systemSetLanguage.isNotEmpty()) {
                 settingsRepository.setLanguage(systemSetLanguage)
             }
         }
@@ -135,6 +144,11 @@ class Droidify : Application(), SingletonImageLoader.Factory, Configuration.Prov
             launch {
                 settingsRepository.get { isoDateFormat }.collect {
                     DateFormatter.useIso8601 = it
+                }
+            }
+            launch {
+                settingsRepository.get { reduceAnimations }.collect {
+                    AnimationHelper.reduceAnimations = it
                 }
             }
             launch {

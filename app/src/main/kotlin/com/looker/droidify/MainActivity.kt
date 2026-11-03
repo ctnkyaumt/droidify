@@ -32,6 +32,7 @@ import com.looker.droidify.ui.repository.RepositoriesFragment
 import com.looker.droidify.ui.repository.RepositoryFragment
 import com.looker.droidify.ui.settings.SettingsFragment
 import com.looker.droidify.ui.tabsFragment.TabsFragment
+import com.looker.droidify.utility.AnimationHelper
 import com.looker.droidify.utility.common.DeeplinkType
 import com.looker.droidify.utility.common.SdkCheck
 import com.looker.droidify.utility.common.deeplinkType
@@ -206,8 +207,9 @@ class MainActivity : AppCompatActivity() {
             currentFragment?.view?.translationZ =
                 (if (open) Int.MIN_VALUE else Int.MAX_VALUE).toFloat()
         }
+        val reduceAnimations = AnimationHelper.shouldReduceAnimations(this)
         supportFragmentManager.commit {
-            if (open != null) {
+            if (open != null && !reduceAnimations) {
                 setCustomAnimations(
                     if (open) R.animator.slide_in else 0,
                     if (open) R.animator.slide_in_keep else R.animator.slide_out,

@@ -105,6 +105,12 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun setReduceAnimations(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setReduceAnimations(enabled)
+        }
+    }
+
     fun setStartupTab(tab: StartupTab) {
         viewModelScope.launch {
             settingsRepository.setStartupTab(tab)

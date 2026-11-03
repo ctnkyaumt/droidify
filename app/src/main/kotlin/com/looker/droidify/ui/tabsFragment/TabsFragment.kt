@@ -42,6 +42,7 @@ import com.looker.droidify.service.Connection
 import com.looker.droidify.service.SyncService
 import com.looker.droidify.ui.ScreenFragment
 import com.looker.droidify.ui.appList.AppListFragment
+import com.looker.droidify.utility.AnimationHelper
 import com.looker.droidify.utility.common.device.Huawei
 import com.looker.droidify.utility.common.extension.dp
 import com.looker.droidify.utility.common.extension.getMutatedIcon
@@ -294,7 +295,8 @@ class TabsFragment : ScreenFragment() {
         }
 
         viewPager?.let {
-            TabLayoutMediator(layout.tabs, it) { tab, position ->
+            val smoothScroll = !AnimationHelper.shouldReduceAnimations(content.context)
+            TabLayoutMediator(layout.tabs, it, true, smoothScroll) { tab, position ->
                 tab.text = getString(AppListFragment.Source.entries[position].titleResId)
             }.attach()
         }
@@ -517,9 +519,10 @@ class TabsFragment : ScreenFragment() {
     private fun selectUpdatesInternal(allowSmooth: Boolean) {
         if (view != null) {
             val viewPager = viewPager
+            val allowAnimation = allowSmooth && !AnimationHelper.shouldReduceAnimations(requireContext())
             viewPager?.setCurrentItem(
                 AppListFragment.Source.UPDATES.ordinal,
-                allowSmooth && viewPager.isLaidOut,
+                allowAnimation && viewPager.isLaidOut,
             )
         } else {
             needSelectUpdates = true

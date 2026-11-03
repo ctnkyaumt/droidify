@@ -1,7 +1,9 @@
 package com.looker.droidify.utility
 
 import android.content.Context
+import android.content.res.Resources
 import android.text.format.DateUtils
+import androidx.appcompat.app.AppCompatDelegate
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -22,18 +24,36 @@ object DateFormatter {
         }
     }
 
-    fun formatDate(millis: Long): String {
+    fun getEffectiveLocale(context: Context? = null): Locale {
+        try {
+            val appLocales = AppCompatDelegate.getApplicationLocales()
+            if (!appLocales.isEmpty) {
+                val appLocale = appLocales[0]
+                if (appLocale != null) return appLocale
+            }
+        } catch (_: Exception) {
+        }
+        return context?.resources?.configuration?.locales?.get(0)
+            ?: try {
+                Resources.getSystem().configuration.locales.get(0)
+            } catch (_: Exception) {
+                null
+            } ?: Locale.getDefault()
+    }
+
+    fun formatDate(millis: Long, locale: Locale? = null): String {
         return if (useIso8601) {
             ISO_DATE_FORMAT.get()!!.format(Date(millis))
         } else {
+            val targetLocale = locale ?: getEffectiveLocale()
             DateFormat
-                .getDateInstance(DateFormat.SHORT)
+                .getDateInstance(DateFormat.SHORT, targetLocale)
                 .apply { timeZone = UTC }
                 .format(Date(millis))
         }
     }
 
-    fun formatRepoDate(context: Context, millis: Long): String {
+    fun formatRepoDate(context: Context, millis: Long, locale: Locale? = null): String {
         return if (useIso8601) {
             ISO_DATE_FORMAT.get()!!.format(Date(millis))
         } else {

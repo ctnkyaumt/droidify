@@ -314,4 +314,6 @@
     <string name="scan_qr_code">Scan QR code</string>
     <string name="qr_camera_permission_required">Camera permission is required to scan QR codes</string>
     <string name="qr_scan_failed">Failed to scan QR code</string>
+    <string name="reduce_animations_title">Reduce animations</string>
+    <string name="reduce_animations_desc">Disable fragment transitions and tab animations</string>
 </resources>
