@@ -21,9 +21,12 @@ class ReleaseFileValidator(
 ) : FileValidator {
 
     override suspend fun validate(file: File): ValidationResult {
-        val checksum = sha256(file).hex()
-        if (!checksum.equals(release.hash, ignoreCase = true)) {
-            return invalid(strings.integrity_check_error_DESC)
+        // GitHub sources may not provide a hash, the package checks below still apply
+        if (release.hash.isNotEmpty()) {
+            val checksum = sha256(file).hex()
+            if (!checksum.equals(release.hash, ignoreCase = true)) {
+                return invalid(strings.integrity_check_error_DESC)
+            }
         }
         val packageInfo = context.packageManager.getPackageArchiveInfoCompat(file.path)
             ?: return invalid(strings.file_format_error_DESC)

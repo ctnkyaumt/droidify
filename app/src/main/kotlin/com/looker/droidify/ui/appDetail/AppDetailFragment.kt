@@ -285,6 +285,7 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
 
                 installedItem != null
                     && selectedRelease != null
+                    && selectedRelease.signature.isNotEmpty()
                     && installedItem.signature != selectedRelease.signature -> {
                     getString(stringRes.incompatible_signature_DESC)
                 }
@@ -573,7 +574,8 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
                 MessageDialog(Message.ReleaseOlder).show(childFragmentManager)
             }
 
-            installedItem != null && installedItem.signature != release.signature -> {
+            installedItem != null && release.signature.isNotEmpty() &&
+                installedItem.signature != release.signature -> {
                 lifecycleScope.launch {
                     if (viewModel.shouldIgnoreSignature()) {
                         queueReleaseInstall(release, installedItem)

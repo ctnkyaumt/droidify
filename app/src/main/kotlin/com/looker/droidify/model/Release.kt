@@ -35,12 +35,19 @@ data class Release(
     }
 
     val identifier: String
-        get() = "$versionCode.$hash"
+        get() = "$versionCode.${hash.ifEmpty { release }}"
 
     fun getDownloadUrl(repository: Repository): String {
+        // GitHub sources store absolute asset urls
+        if (release.startsWith("https://") || release.startsWith("http://")) return release
         return repository.address.toUri().buildUpon().appendPath(release).build().toString()
     }
 
     val cacheFileName: String
-        get() = "${hash.replace('/', '-')}.apk"
+        get() = if (hash.isNotEmpty()) {
+            "${hash.replace('/', '-')}.apk"
+        } else {
+            // No hash known (GitHub assets without digest), name after the download url
+            "url-${Integer.toHexString(release.hashCode())}-$versionCode.apk"
+        }
 }

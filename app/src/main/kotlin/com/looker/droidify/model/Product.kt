@@ -99,8 +99,9 @@ data class Product(
     }
 
     fun canUpdate(installedItem: InstalledItem?): Boolean {
+        // No known signatures (GitHub sources): Android itself enforces the update signature
         return installedItem != null && compatible && versionCode > installedItem.versionCode &&
-            installedItem.signature in signatures
+            (signatures.isEmpty() || installedItem.signature in signatures)
     }
 }
 
@@ -109,7 +110,8 @@ fun List<Pair<Product, Repository>>.findSuggested(
 ): Pair<Product, Repository>? = maxWithOrNull(
     compareBy(
         { (product, _) ->
-            val isSameSignature = installedItem == null || installedItem.signature in product.signatures
+            val isSameSignature = installedItem == null || product.signatures.isEmpty() ||
+                installedItem.signature in product.signatures
             product.compatible && (isSameSignature)
         },
         { (product, _) ->

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.core.net.toUri
 import com.looker.droidify.data.model.fingerprint
 import com.looker.droidify.database.Database
+import com.looker.droidify.github.GitHubRepositoryUpdater
 import com.looker.droidify.model.Product
 import com.looker.droidify.model.Release
 import com.looker.droidify.model.Repository
@@ -96,13 +97,54 @@ object RepositoryUpdater {
         repository: Repository,
         unstable: Boolean,
         callback: (Stage, Long, Long?) -> Unit,
-    ) = update(
-        context = context,
-        repository = repository,
-        unstable = unstable,
-        indexTypes = listOf(IndexType.INDEX_V1),
-        callback = callback,
-    )
+    ): Result<Boolean> = if (repository.gitHubSlug != null) {
+        GitHubRepositoryUpdater.update(
+            context = context,
+            downloader = downloader,
+            repository = repository,
+            unstable = unstable,
+            callback = callback,
+        )
+    } else {
+        update(
+            context = context,
+            repository = repository,
+            unstable = unstable,
+            indexTypes = listOf(IndexType.INDEX_V1),
+            callback = callback,
+        )
+    }
+
+    /**
+     * Replaces all products of [repository] with [products] and stores [repository],
+     * for sources which are not F-Droid indexes.
+     */
+    internal fun commitProducts(
+        context: Context,
+        repository: Repository,
+        products: List<Product>,
+        unstable: Boolean,
+    ) {
+        synchronized(updaterLock) {
+            var rollback = true
+            try {
+                Database.UpdaterAdapter.createTemporaryTable()
+                val features = context.packageManager.systemAvailableFeatures
+                    .asSequence().map { it.name }.toSet() + setOf("android.hardware.touchscreen")
+                Database.UpdaterAdapter.putTemporary(
+                    products.map { transformProduct(it, features, unstable) },
+                )
+                synchronized(cleanupLock) {
+                    Database.UpdaterAdapter.finishTemporary(repository, true)
+                }
+                rollback = false
+            } finally {
+                if (rollback) {
+                    Database.UpdaterAdapter.finishTemporary(repository, false)
+                }
+            }
+        }
+    }
 
     private suspend fun update(
         context: Context,

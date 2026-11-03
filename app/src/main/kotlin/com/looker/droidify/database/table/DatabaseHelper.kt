@@ -16,7 +16,7 @@ import com.looker.droidify.utility.serialization.repository
 
 private const val DB_LEGACY_NAME = "droidify"
 
-private const val DB_LEGACY_VERSION = 6
+private const val DB_LEGACY_VERSION = 7
 
 class DatabaseHelper(context: Context) :
     SQLiteOpenHelper(context, DB_LEGACY_NAME, null, DB_LEGACY_VERSION) {
@@ -39,6 +39,7 @@ class DatabaseHelper(context: Context) :
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         db.removeRepositories()
+        db.migrateRepositories()
         db.addNewlyAddedRepositories()
         db.addOemRepositories()
         this.updated = true
@@ -114,6 +115,64 @@ class DatabaseHelper(context: Context) :
         if (reposToAdd.isNotEmpty()) {
             reposToAdd.forEach { repo ->
                 RepositoryAdapter.put(repo, database = this)
+            }
+        }
+    }
+
+    private fun SQLiteDatabase.migrateRepositories() {
+        // Move repositories to a new address, dropping everything tied to the old one
+        val migrations = Repository.addressesToMigrate()
+        if (migrations.isEmpty()) return
+
+        val existingRepos = query(
+            Schema.Repository.name,
+            columns = arrayOf(Schema.Repository.ROW_ID, Schema.Repository.ROW_DATA),
+            selection = Pair("${Schema.Repository.ROW_DELETED} == 0", emptyArray()),
+            signal = null,
+        ).use { cursor ->
+            cursor.asSequence().mapNotNull {
+                val idIndex = it.getColumnIndexOrThrow(Schema.Repository.ROW_ID)
+                val dataIndex = it.getColumnIndexOrThrow(Schema.Repository.ROW_DATA)
+                val id = it.getLong(idIndex)
+                val data = it.getBlob(dataIndex)
+                try {
+                    data.jsonParse { json -> json.repository() }.copy(id = id)
+                } catch (_: Exception) {
+                    null
+                }
+            }.toList()
+        }
+
+        val reposToMigrate = existingRepos.filter { it.address in migrations }
+        if (reposToMigrate.isEmpty()) return
+
+        val knownRepos = Repository.defaultRepositories + Repository.newRepos()
+        transaction {
+            reposToMigrate.forEach { repo ->
+                val newAddress = migrations.getValue(repo.address)
+                val template = knownRepos.find { it.address == newAddress }
+                val migrated = repo.copy(
+                    address = newAddress,
+                    mirrors = emptyList(),
+                    name = template?.name ?: repo.name,
+                    description = template?.description ?: repo.description,
+                    fingerprint = template?.fingerprint.orEmpty(),
+                    lastModified = "",
+                    entityTag = "",
+                    updated = 0L,
+                    timestamp = 0L,
+                )
+                RepositoryAdapter.putWithoutNotification(migrated, true, this)
+                delete(
+                    Schema.Product.name,
+                    "${Schema.Product.ROW_REPOSITORY_ID} = ?",
+                    arrayOf(repo.id.toString()),
+                )
+                delete(
+                    Schema.Category.name,
+                    "${Schema.Category.ROW_REPOSITORY_ID} = ?",
+                    arrayOf(repo.id.toString()),
+                )
             }
         }
     }

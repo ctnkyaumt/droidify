@@ -575,9 +575,10 @@ object Database {
             val signatureMatches = if (skipSignatureCheck) {
                 "1"
             } else {
-                """installed.${Schema.Installed.ROW_SIGNATURE} IS NOT NULL AND
-                product.${Schema.Product.ROW_SIGNATURES} LIKE ('%.' || installed.${Schema.Installed.ROW_SIGNATURE} || '.%') AND
-                product.${Schema.Product.ROW_SIGNATURES} != ''"""
+                // Products without known signatures (GitHub sources) match any signature
+                """(product.${Schema.Product.ROW_SIGNATURES} = '' OR
+                (installed.${Schema.Installed.ROW_SIGNATURE} IS NOT NULL AND
+                product.${Schema.Product.ROW_SIGNATURES} LIKE ('%.' || installed.${Schema.Installed.ROW_SIGNATURE} || '.%')))"""
             }
 
             builder += """SELECT product.rowid AS _id, product.${Schema.Product.ROW_REPOSITORY_ID},

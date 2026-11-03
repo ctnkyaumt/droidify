@@ -1,5 +1,6 @@
 package com.looker.droidify.model
 
+import java.net.URI
 import java.net.URL
 
 data class Repository(
@@ -56,6 +57,13 @@ data class Repository(
         return copy(enabled = enabled, lastModified = "", entityTag = "")
     }
 
+    /**
+     * Owner and repository name when this is a "GitHub source", a repository synced from
+     * the releases of a GitHub repository instead of an F-Droid index.
+     */
+    val gitHubSlug: Pair<String, String>?
+        get() = gitHubSlugOf(address)
+
     @Suppress("SpellCheckingInspection")
     companion object {
 
@@ -86,6 +94,15 @@ data class Repository(
                 fingerprint, "", "", 0L, 0L, authentication,
             )
         }
+
+        private val cromiteGitHub = defaultRepository(
+            address = "https://github.com/uazo/cromite",
+            name = "Cromite",
+            description = "Cromite releases from GitHub. Cromite is a Chromium " +
+                "fork based on Bromite with built-in support for ad blocking " +
+                "and an eye for privacy.",
+            fingerprint = "",
+        )
 
         val defaultRepositories = listOf(
             defaultRepository(
@@ -247,13 +264,7 @@ data class Repository(
                     " is an open source messenger focused on security and privacy.",
                 fingerprint = "DB0E5297EB65CC22D6BD93C869943BDCFCB6A07DC69A48A0DD8C7BA698EC04E6",
             ),
-            defaultRepository(
-                address = "https://www.cromite.org/fdroid/repo",
-                name = "Cromite",
-                description = "The official repository for Cromite. Cromite" +
-                    " is a Chromium with ad blocking and enhanced privacy.",
-                fingerprint = "49F37E74DEE483DCA2B991334FB5A0200787430D0B5F9A783DD5F13695E9517B",
-            ),
+            cromiteGitHub,
             defaultRepository(
                 address = "https://fdroid.twinhelix.com/fdroid/repo",
                 name = "TwinHelix",
@@ -375,14 +386,6 @@ data class Repository(
                 fingerprint = "3576596CECDD70488D61CFD90799A49B7FFD26A81A8FEF1BADEC88D069FA72C1",
             ),
             defaultRepository(
-                address = "https://www.cromite.org/fdroid/repo",
-                name = "Cromite",
-                description = "The official repository for Cromite. " +
-                    "Cromite is a Chromium fork based on Bromite with " +
-                    "built-in support for ad blocking and an eye for privacy.",
-                fingerprint = "49F37E74DEE483DCA2B991334FB5A0200787430D0B5F9A783DD5F13695E9517B",
-            ),
-            defaultRepository(
                 address = "https://brave-browser-apk-release.s3.brave.com/fdroid/repo",
                 name = "Brave Browser",
                 description = "The official repository for Brave Stable releases.",
@@ -402,7 +405,59 @@ data class Repository(
             ),
         )
 
-        fun newRepos(): List<Repository> = listOf()
+        fun newRepos(): List<Repository> = listOf(
+            defaultRepository(
+                address = "https://github.com/Teskann/QuaX",
+                name = "QuaX",
+                description = "QuaX releases from GitHub. QuaX is a free, open-sou" +
+                    "rce, privacy-focused client for X (formerly Twitter).",
+                fingerprint = "",
+            ),
+        )
+
+        /**
+         * Stored repository addresses to replace during database upgrades, old to new.
+         * Migrated repositories lose their fingerprint, sync state and products.
+         */
+        fun addressesToMigrate(): Map<String, String> = mapOf(
+            "https://www.cromite.org/fdroid/repo" to cromiteGitHub.address,
+        )
+
+        private const val GITHUB_HOST = "github.com"
+        private val GITHUB_NAME_REGEX = Regex("[A-Za-z0-9_.-]+")
+
+        /**
+         * Owner and repository name of `https://github.com/<owner>/<repo>` addresses
+         * (optionally with a trailing `/`, `.git` or `/releases`), `null` for other addresses.
+         */
+        fun gitHubSlugOf(address: String): Pair<String, String>? {
+            val uri = try {
+                URI(address.trim())
+            } catch (_: Exception) {
+                return null
+            }
+            val scheme = uri.scheme?.lowercase()
+            if (scheme != "https" && scheme != "http") return null
+            val host = uri.host?.lowercase() ?: return null
+            if (host != GITHUB_HOST && host != "www.$GITHUB_HOST") return null
+            val path = uri.path.orEmpty()
+                .trimEnd('/')
+                .removeSuffix("/releases")
+                .trimEnd('/')
+                .removeSuffix(".git")
+                .trim('/')
+            val segments = path.split('/')
+            if (segments.size != 2) return null
+            val (owner, repo) = segments
+            if (!GITHUB_NAME_REGEX.matches(owner) || !GITHUB_NAME_REGEX.matches(repo)) return null
+            return owner to repo
+        }
+
+        /**
+         * Canonical `https://github.com/<owner>/<repo>` form of a GitHub source address.
+         */
+        fun normalizeGitHubAddress(address: String): String? =
+            gitHubSlugOf(address)?.let { (owner, repo) -> "https://$GITHUB_HOST/$owner/$repo" }
 
         fun addressesToRemove(): List<String> = listOf(
             // Add repository addresses that should be removed during database upgrades and remove them from the lists above

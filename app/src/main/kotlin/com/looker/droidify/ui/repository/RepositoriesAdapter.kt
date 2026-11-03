@@ -91,8 +91,13 @@ class RepositoriesAdapter(
             holder.repoState.backgroundTintList = ColorStateList.valueOf(colorSurfaceContainer)
         }
 
-        holder.repoIcon.load(repository.address + "/icons/icon.png") {
-            authentication(repository.authentication)
+        val gitHubSlug = repository.gitHubSlug
+        if (gitHubSlug != null) {
+            holder.repoIcon.load("https://github.com/${gitHubSlug.first}.png")
+        } else {
+            holder.repoIcon.load(repository.address + "/icons/icon.png") {
+                authentication(repository.authentication)
+            }
         }
     }
 }
