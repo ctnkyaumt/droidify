@@ -70,4 +70,48 @@ class DateFormatterTest {
             formatted,
         )
     }
+
+    private val day = 24L * 60 * 60 * 1000
+    private val now = 1_000_000_000_000L
+
+    private fun age(daysAgo: Long, extraMillis: Long = 0L) =
+        DateFormatter.relativeAge(now - daysAgo * day - extraMillis, now)
+
+    @Test
+    fun `relativeAge under one day is today`() {
+        assertEquals(RelativeAge(0, RelativeAgeUnit.DAY), age(0, 23L * 60 * 60 * 1000))
+    }
+
+    @Test
+    fun `relativeAge in the future is today`() {
+        assertEquals(RelativeAge(0, RelativeAgeUnit.DAY), DateFormatter.relativeAge(now + day, now))
+    }
+
+    @Test
+    fun `relativeAge counts days below one week`() {
+        assertEquals(RelativeAge(1, RelativeAgeUnit.DAY), age(1))
+        assertEquals(RelativeAge(5, RelativeAgeUnit.DAY), age(5))
+        assertEquals(RelativeAge(6, RelativeAgeUnit.DAY), age(6))
+    }
+
+    @Test
+    fun `relativeAge counts weeks from seven days up to five weeks`() {
+        assertEquals(RelativeAge(1, RelativeAgeUnit.WEEK), age(7))
+        assertEquals(RelativeAge(3, RelativeAgeUnit.WEEK), age(21))
+        assertEquals(RelativeAge(4, RelativeAgeUnit.WEEK), age(34))
+    }
+
+    @Test
+    fun `relativeAge counts 30 day months from 35 days up to a year`() {
+        assertEquals(RelativeAge(1, RelativeAgeUnit.MONTH), age(35))
+        assertEquals(RelativeAge(2, RelativeAgeUnit.MONTH), age(60))
+        assertEquals(RelativeAge(11, RelativeAgeUnit.MONTH), age(359))
+    }
+
+    @Test
+    fun `relativeAge counts 365 day years with a minimum of one`() {
+        assertEquals(RelativeAge(1, RelativeAgeUnit.YEAR), age(360))
+        assertEquals(RelativeAge(1, RelativeAgeUnit.YEAR), age(365))
+        assertEquals(RelativeAge(2, RelativeAgeUnit.YEAR), age(800))
+    }
 }

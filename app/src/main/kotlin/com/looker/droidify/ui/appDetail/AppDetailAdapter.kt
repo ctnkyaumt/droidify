@@ -15,7 +15,6 @@ import android.text.SpannableStringBuilder
 import android.text.method.LinkMovementMethod
 import android.text.style.RelativeSizeSpan
 import android.text.style.ReplacementSpan
-import android.text.format.DateUtils
 import android.text.style.TypefaceSpan
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -1878,7 +1877,7 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
                     context.getString(stringRes.provided_by_FORMAT, item.repository.name)
                 val date = DateFormatter.formatDate(item.release.added)
                 val relative = if (item.release.added > 0L) {
-                    DateUtils.getRelativeTimeSpanString(item.release.added)
+                    DateFormatter.formatRelative(item.release.added)
                 } else {
                     null
                 }
