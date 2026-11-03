@@ -1,12 +1,8 @@
 package com.looker.droidify.ui.repository
 
-import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
-import com.looker.droidify.utility.isLocalHost
-import com.looker.droidify.utility.common.PERMISSION_ACCESS_LOCAL_NETWORK
-import com.looker.droidify.utility.common.hasLocalNetworkPermission
+import com.looker.droidify.utility.common.checkLocalNetworkPermission
+import com.looker.droidify.utility.common.registerLocalNetworkPermissionLauncher
 import android.text.Selection
 import android.util.Base64
 import android.view.MenuItem
@@ -85,21 +81,18 @@ class EditRepositoryFragment() : ScreenFragment() {
 
     private var pendingSaveCheck: Boolean? = null
 
-    private val localNetworkPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { isGranted ->
-        val check = pendingSaveCheck
-        pendingSaveCheck = null
-        if (isGranted && check != null) {
-            proceedSaveRepository(check)
-        } else if (!isGranted) {
-            Toast.makeText(
-                requireContext(),
-                R.string.local_network_permission_required,
-                Toast.LENGTH_SHORT,
-            ).show()
-        }
-    }
+    private val localNetworkPermissionLauncher = registerLocalNetworkPermissionLauncher(
+        onGranted = {
+            val check = pendingSaveCheck
+            pendingSaveCheck = null
+            if (check != null) {
+                proceedSaveRepository(check)
+            }
+        },
+        onDenied = {
+            pendingSaveCheck = null
+        },
+    )
 
     @Inject
     lateinit var downloader: Downloader
@@ -411,12 +404,9 @@ class EditRepositoryFragment() : ScreenFragment() {
                 failedAddressCheck()
                 return
             }
-            if (Build.VERSION.SDK_INT >= 37 && isLocalHost(address)) {
-                if (!requireContext().hasLocalNetworkPermission()) {
-                    pendingSaveCheck = check
-                    localNetworkPermissionLauncher.launch(PERMISSION_ACCESS_LOCAL_NETWORK)
-                    return
-                }
+            if (!checkLocalNetworkPermission(address, localNetworkPermissionLauncher)) {
+                pendingSaveCheck = check
+                return
             }
             proceedSaveRepository(check)
         }

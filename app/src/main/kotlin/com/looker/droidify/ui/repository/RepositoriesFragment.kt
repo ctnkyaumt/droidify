@@ -1,13 +1,9 @@
 package com.looker.droidify.ui.repository
 
 import android.database.Cursor
-import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
-import com.looker.droidify.utility.isLocalHost
-import com.looker.droidify.utility.common.PERMISSION_ACCESS_LOCAL_NETWORK
-import com.looker.droidify.utility.common.hasLocalNetworkPermission
+import com.looker.droidify.utility.common.checkLocalNetworkPermission
+import com.looker.droidify.utility.common.registerLocalNetworkPermissionLauncher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -37,24 +33,21 @@ class RepositoriesFragment : ScreenFragment(), CursorOwner.Callback {
 
     private var pendingRepoToggle: Pair<Repository, Boolean>? = null
 
-    private val localNetworkPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { isGranted ->
-        val toggle = pendingRepoToggle
-        pendingRepoToggle = null
-        if (isGranted && toggle != null) {
-            val (repo, enabled) = toggle
-            syncConnection.binder?.setEnabled(repo, enabled)
+    private val localNetworkPermissionLauncher = registerLocalNetworkPermissionLauncher(
+        onGranted = {
+            val toggle = pendingRepoToggle
+            pendingRepoToggle = null
+            if (toggle != null) {
+                val (repo, enabled) = toggle
+                syncConnection.binder?.setEnabled(repo, enabled)
+                (binding.recyclerView.adapter as? RepositoriesAdapter)?.notifyDataSetChanged()
+            }
+        },
+        onDenied = {
+            pendingRepoToggle = null
             (binding.recyclerView.adapter as? RepositoriesAdapter)?.notifyDataSetChanged()
-        } else if (!isGranted) {
-            Toast.makeText(
-                requireContext(),
-                R.string.local_network_permission_required,
-                Toast.LENGTH_SHORT,
-            ).show()
-            (binding.recyclerView.adapter as? RepositoriesAdapter)?.notifyDataSetChanged()
-        }
-    }
+        },
+    )
 
     private val scanQrCodeLauncher = registerForActivityResult(ScanQRCode()) { result ->
         when (result) {
@@ -113,12 +106,9 @@ class RepositoriesFragment : ScreenFragment(), CursorOwner.Callback {
                 adapter = RepositoriesAdapter(
                     navigate = { mainActivity.navigateRepository(it.id) },
                 ) { repository, isEnabled ->
-                    if (isEnabled && Build.VERSION.SDK_INT >= 37 && isLocalHost(repository.address)) {
-                        if (!requireContext().hasLocalNetworkPermission()) {
-                            pendingRepoToggle = repository to isEnabled
-                            localNetworkPermissionLauncher.launch(PERMISSION_ACCESS_LOCAL_NETWORK)
-                            return@RepositoriesAdapter false
-                        }
+                    if (isEnabled && !checkLocalNetworkPermission(repository.address, localNetworkPermissionLauncher)) {
+                        pendingRepoToggle = repository to isEnabled
+                        return@RepositoriesAdapter false
                     }
                     repository.enabled != isEnabled &&
                         syncConnection.binder?.setEnabled(repository, isEnabled) == true

@@ -6,8 +6,14 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
+import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import androidx.fragment.app.Fragment
+import com.looker.droidify.R
+import com.looker.droidify.utility.isLocalHost
 import com.looker.droidify.utility.common.extension.intent
 import com.looker.droidify.utility.common.extension.powerManager
 
@@ -22,6 +28,33 @@ fun Context.hasLocalNetworkPermission(): Boolean =
     } else {
         true
     }
+
+fun Fragment.registerLocalNetworkPermissionLauncher(
+    onGranted: () -> Unit,
+    onDenied: () -> Unit = {},
+): ActivityResultLauncher<String> = registerForActivityResult(
+    ActivityResultContracts.RequestPermission(),
+) { isGranted ->
+    if (isGranted) {
+        onGranted()
+    } else {
+        context?.let {
+            Toast.makeText(it, R.string.local_network_permission_required, Toast.LENGTH_SHORT).show()
+        }
+        onDenied()
+    }
+}
+
+fun Fragment.checkLocalNetworkPermission(
+    address: String,
+    launcher: ActivityResultLauncher<String>,
+): Boolean {
+    if (isLocalHost(address) && !requireContext().hasLocalNetworkPermission()) {
+        launcher.launch(PERMISSION_ACCESS_LOCAL_NETWORK)
+        return false
+    }
+    return true
+}
 
 fun Context.isIgnoreBatteryEnabled() =
     powerManager?.isIgnoringBatteryOptimizations(packageName) == true

@@ -1,12 +1,8 @@
 package com.looker.droidify.ui.repository
 
-import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
-import com.looker.droidify.utility.isLocalHost
-import com.looker.droidify.utility.common.PERMISSION_ACCESS_LOCAL_NETWORK
-import com.looker.droidify.utility.common.hasLocalNetworkPermission
+import com.looker.droidify.utility.common.checkLocalNetworkPermission
+import com.looker.droidify.utility.common.registerLocalNetworkPermissionLauncher
 import android.text.SpannableStringBuilder
 import android.text.format.DateUtils
 import android.text.style.ForegroundColorSpan
@@ -48,22 +44,19 @@ class RepositoryFragment() : ScreenFragment() {
 
     private var pendingRepoToggle = false
 
-    private val localNetworkPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { isGranted ->
-        if (isGranted && pendingRepoToggle) {
-            viewModel.enabledRepository(true)
-            binding.repoSwitch.isChecked = true
-        } else if (!isGranted) {
-            Toast.makeText(
-                requireContext(),
-                stringRes.local_network_permission_required,
-                Toast.LENGTH_SHORT,
-            ).show()
+    private val localNetworkPermissionLauncher = registerLocalNetworkPermissionLauncher(
+        onGranted = {
+            if (pendingRepoToggle) {
+                viewModel.enabledRepository(true)
+                binding.repoSwitch.isChecked = true
+            }
+            pendingRepoToggle = false
+        },
+        onDenied = {
             binding.repoSwitch.isChecked = false
-        }
-        pendingRepoToggle = false
-    }
+            pendingRepoToggle = false
+        },
+    )
 
     constructor(repositoryId: Long) : this() {
         arguments = Bundle().apply { putLong(RepositoryViewModel.ARG_REPO_ID, repositoryId) }
@@ -110,13 +103,10 @@ class RepositoryFragment() : ScreenFragment() {
             } else {
                 repoSwitch.isChecked = repository.enabled
                 repoSwitch.setOnCheckedChangeListener { _, isChecked ->
-                    if (isChecked && Build.VERSION.SDK_INT >= 37 && isLocalHost(repository.address)) {
-                        if (!requireContext().hasLocalNetworkPermission()) {
-                            pendingRepoToggle = true
-                            localNetworkPermissionLauncher.launch(PERMISSION_ACCESS_LOCAL_NETWORK)
-                            repoSwitch.isChecked = false
-                            return@setOnCheckedChangeListener
-                        }
+                    if (isChecked && !checkLocalNetworkPermission(repository.address, localNetworkPermissionLauncher)) {
+                        pendingRepoToggle = true
+                        repoSwitch.isChecked = false
+                        return@setOnCheckedChangeListener
                     }
                     viewModel.enabledRepository(isChecked)
                 }
