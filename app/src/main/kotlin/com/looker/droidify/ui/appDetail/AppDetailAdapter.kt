@@ -15,6 +15,7 @@ import android.text.SpannableStringBuilder
 import android.text.method.LinkMovementMethod
 import android.text.style.RelativeSizeSpan
 import android.text.style.ReplacementSpan
+import android.text.format.DateUtils
 import android.text.style.TypefaceSpan
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -1857,7 +1858,13 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
 
                 holder.source.text =
                     context.getString(stringRes.provided_by_FORMAT, item.repository.name)
-                holder.added.text = formatDate(item.release.added)
+                val date = formatDate(item.release.added)
+                val relative = if (item.release.added > 0L) {
+                    DateUtils.getRelativeTimeSpanString(item.release.added)
+                } else {
+                    null
+                }
+                holder.added.text = if (relative != null) "$date ($relative)" else date
                 holder.size.text = DataSize(item.release.size).toString()
                 holder.signature.isVisible =
                     item.showSignature && item.release.signature.isNotEmpty()

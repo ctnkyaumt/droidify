@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import android.text.format.DateUtils
 import androidx.compose.ui.unit.sp
 import com.looker.droidify.R
 import com.looker.droidify.data.local.model.Reproducible
@@ -129,7 +130,15 @@ fun ReleaseItem(
                 }
 
                 // Date
-                val dateString = remember(release.added) { formatDate(release.added) }
+                val dateString = remember(release.added) {
+                    val date = formatDate(release.added)
+                    if (release.added > 0L) {
+                        val relative = DateUtils.getRelativeTimeSpanString(release.added)
+                        "$date ($relative)"
+                    } else {
+                        date
+                    }
+                }
                 Text(
                     text = dateString,
                     style = MaterialTheme.typography.bodyMedium,
