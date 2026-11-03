@@ -40,8 +40,11 @@ object GitHubRepositoryUpdater {
     private const val RELEASES_PER_PAGE = 15
 
     private const val PROBE_CACHE_DIR = "github"
+    private const val ICON_RETRY_INTERVAL_MILLIS = 7L * 24 * 60 * 60 * 1000 // 7 days
 
     private val probeCacheSerializer = MapSerializer(String.serializer(), ApkManifest.serializer())
+    private val iconCacheSerializer =
+        MapSerializer(String.serializer(), GitHubIconCacheEntry.serializer())
 
     suspend fun update(
         context: Context,
@@ -61,7 +64,8 @@ object GitHubRepositoryUpdater {
                 context = context,
                 downloader = downloader,
                 url = "$API_URL/repos/$owner/$name/releases?per_page=$RELEASES_PER_PAGE",
-                entityTag = repository.entityTag,
+                // Sync fully once if the app icons were never resolved for this repository
+                entityTag = if (iconCacheFile(context, repository.id).exists()) repository.entityTag else "",
             ) ?: return@withContext Result.Success(false)
             val releases = GitHubReleaseMapper.parseReleases(releasesResponse.body)
 
@@ -79,6 +83,7 @@ object GitHubRepositoryUpdater {
                 description = info?.description,
                 htmlUrl = info?.htmlUrl?.ifBlank { null } ?: "https://github.com/$owner/$name",
                 owner = GitHubOwner(info?.owner?.login?.ifBlank { null } ?: owner),
+                defaultBranch = info?.defaultBranch?.ifBlank { null } ?: "main",
             )
 
             val deviceAbis = Android.platforms.toList()
@@ -109,11 +114,74 @@ object GitHubRepositoryUpdater {
             }
             writeProbeCache(cacheFile, probed)
 
+            // Resolve real app icons: 1. Repository tree -> 2. The APK itself -> avatar fallback
+            val treeIconUrl = resolveTreeIcon(
+                context = context,
+                downloader = downloader,
+                repositoryId = repository.id,
+                owner = owner,
+                name = name,
+                defaultBranch = repoInfo.defaultBranch,
+            )
+
+            val iconCacheFile = iconCacheFile(context, repository.id)
+            val iconCache = readIconCache(iconCacheFile).toMutableMap()
+            val resolvedIcons = mutableMapOf<String, String>()
+            val byPackage = probed.values.map { it.packageName }.distinct()
+            val stable = GitHubReleaseMapper.stableReleases(releases)
+
+            for (packageName in byPackage) {
+                if (!treeIconUrl.isNullOrBlank()) {
+                    resolvedIcons[packageName] = treeIconUrl
+                    continue
+                }
+
+                val cacheKey = "${repository.id}_$packageName"
+                val cached = iconCache[cacheKey]
+
+                val shouldResolve = if (cached == null) {
+                    true
+                } else if (cached.iconUri != "none") {
+                    val localPath = cached.iconUri.removePrefix("file://")
+                    if (File(localPath).exists()) {
+                        resolvedIcons[packageName] = cached.iconUri
+                        false
+                    } else {
+                        true
+                    }
+                } else {
+                    val elapsed = System.currentTimeMillis() - cached.timestamp
+                    elapsed >= ICON_RETRY_INTERVAL_MILLIS
+                }
+
+                if (shouldResolve) {
+                    val newestAsset = stable
+                        .flatMap { it.assets }
+                        .firstOrNull { probed[it.cacheKey]?.packageName == packageName }
+
+                    if (newestAsset != null) {
+                        resolveAndStoreApkIcon(
+                            context = context,
+                            downloader = downloader,
+                            repositoryId = repository.id,
+                            packageName = packageName,
+                            cacheKey = cacheKey,
+                            asset = newestAsset,
+                            manifest = probed[newestAsset.cacheKey]!!,
+                            iconCache = iconCache,
+                            resolvedIcons = resolvedIcons,
+                        )
+                    }
+                }
+            }
+            writeIconCache(iconCacheFile, iconCache)
+
             val products = GitHubReleaseMapper.map(
                 repositoryId = repository.id,
                 repo = repoInfo,
                 releases = releases,
                 deviceAbis = deviceAbis,
+                icons = resolvedIcons,
             ) { asset -> probed[asset.cacheKey] }
 
             callback(Stage.COMMIT, 0, null)
@@ -138,6 +206,92 @@ object GitHubRepositoryUpdater {
                 UpdateException(ErrorType.PARSING, "Error reading GitHub releases of $owner/$name", e),
             )
         }
+    }
+
+    private suspend fun resolveTreeIcon(
+        context: Context,
+        downloader: Downloader,
+        repositoryId: Long,
+        owner: String,
+        name: String,
+        defaultBranch: String,
+    ): String? {
+        val cacheFile = treeCacheFile(context, repositoryId)
+        val cached = readTreeCache(cacheFile)
+        val branch = defaultBranch.ifBlank { "main" }
+        return try {
+            val response = getApi(
+                context = context,
+                downloader = downloader,
+                url = "$API_URL/repos/$owner/$name/git/trees/$branch?recursive=1",
+                entityTag = cached?.entityTag.orEmpty(),
+            )
+            if (response != null) {
+                val treeResponse = JsonParser.decodeFromString(GitHubTreeResponse.serializer(), response.body)
+                val paths = treeResponse.tree.map { it.path }
+                val chosenPath = GitHubTreeIconResolver.findBestTreeIconPath(paths)
+                val iconUrl = chosenPath?.let {
+                    GitHubTreeIconResolver.buildTreeIconUrl(owner, name, branch, it)
+                }
+                writeTreeCache(cacheFile, GitHubTreeCache(entityTag = response.entityTag, iconUrl = iconUrl))
+                iconUrl
+            } else {
+                cached?.iconUrl
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not resolve git tree icon for $owner/$name", e)
+            cached?.iconUrl
+        }
+    }
+
+    private suspend fun resolveAndStoreApkIcon(
+        context: Context,
+        downloader: Downloader,
+        repositoryId: Long,
+        packageName: String,
+        cacheKey: String,
+        asset: GitHubAsset,
+        manifest: ApkManifest,
+        iconCache: MutableMap<String, GitHubIconCacheEntry>,
+        resolvedIcons: MutableMap<String, String>,
+    ) {
+        val resolved = try {
+            ApkIconResolver.resolveIcon(
+                reader = HttpRangeReader(context, downloader, asset),
+                iconResId = manifest.iconResId,
+                roundIconResId = manifest.roundIconResId,
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not resolve APK icon for ${asset.name}", e)
+            null
+        }
+
+        val now = System.currentTimeMillis()
+        if (resolved != null) {
+            val uri = saveIconFile(context, repositoryId, packageName, resolved.extension, resolved.bytes)
+            iconCache[cacheKey] = GitHubIconCacheEntry(iconUri = uri, timestamp = now)
+            resolvedIcons[packageName] = uri
+        } else {
+            iconCache[cacheKey] = GitHubIconCacheEntry(iconUri = "none", timestamp = now)
+        }
+    }
+
+    private fun saveIconFile(
+        context: Context,
+        repositoryId: Long,
+        packageName: String,
+        extension: String,
+        bytes: ByteArray,
+    ): String {
+        val iconsDir = File(File(context.filesDir, PROBE_CACHE_DIR), "icons")
+        iconsDir.mkdirs()
+        val file = File(iconsDir, "${repositoryId}_${packageName}.$extension")
+        file.writeBytes(bytes)
+        return "file://${file.absolutePath}"
     }
 
     private class ApiResponse(val body: String, val entityTag: String)
@@ -260,6 +414,58 @@ object GitHubRepositoryUpdater {
             file.writeText(JsonParser.encodeToString(probeCacheSerializer, entries))
         } catch (e: IOException) {
             Log.w(TAG, "Could not write probe cache", e)
+        }
+    }
+
+    private fun treeCacheFile(context: Context, repositoryId: Long): File =
+        File(File(context.filesDir, PROBE_CACHE_DIR), "tree_$repositoryId.json")
+
+    private fun readTreeCache(file: File): GitHubTreeCache? = try {
+        if (file.exists()) {
+            JsonParser.decodeFromString(GitHubTreeCache.serializer(), file.readText())
+        } else {
+            null
+        }
+    } catch (e: Exception) {
+        Log.w(TAG, "Ignoring unreadable tree cache", e)
+        null
+    }
+
+    private fun writeTreeCache(file: File, cache: GitHubTreeCache) {
+        try {
+            file.parentFile?.mkdirs()
+            file.writeText(JsonParser.encodeToString(GitHubTreeCache.serializer(), cache))
+        } catch (e: IOException) {
+            Log.w(TAG, "Could not write tree cache", e)
+        }
+    }
+
+    private fun iconCacheFile(context: Context, repositoryId: Long): File =
+        File(File(context.filesDir, PROBE_CACHE_DIR), "icon_$repositoryId.json")
+
+    private fun readIconCache(file: File): Map<String, GitHubIconCacheEntry> = try {
+        if (file.exists()) {
+            try {
+                JsonParser.decodeFromString(iconCacheSerializer, file.readText())
+            } catch (_: Exception) {
+                val oldSerializer = MapSerializer(String.serializer(), String.serializer())
+                val old = JsonParser.decodeFromString(oldSerializer, file.readText())
+                old.mapValues { GitHubIconCacheEntry(iconUri = it.value, timestamp = 0L) }
+            }
+        } else {
+            emptyMap()
+        }
+    } catch (e: Exception) {
+        Log.w(TAG, "Ignoring unreadable icon cache", e)
+        emptyMap()
+    }
+
+    private fun writeIconCache(file: File, entries: Map<String, GitHubIconCacheEntry>) {
+        try {
+            file.parentFile?.mkdirs()
+            file.writeText(JsonParser.encodeToString(iconCacheSerializer, entries))
+        } catch (e: IOException) {
+            Log.w(TAG, "Could not write icon cache", e)
         }
     }
 

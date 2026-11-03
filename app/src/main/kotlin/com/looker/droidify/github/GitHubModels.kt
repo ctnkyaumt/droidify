@@ -38,9 +38,36 @@ data class GitHubRepoInfo(
     @SerialName("html_url")
     val htmlUrl: String = "",
     val owner: GitHubOwner? = null,
+    @SerialName("default_branch")
+    val defaultBranch: String = "main",
 )
 
 @Serializable
 data class GitHubOwner(
     val login: String = "",
+)
+
+@Serializable
+data class GitHubTreeResponse(
+    val sha: String = "",
+    val tree: List<GitHubTreeEntry> = emptyList(),
+    val truncated: Boolean = false,
+)
+
+@Serializable
+data class GitHubTreeEntry(
+    val path: String = "",
+    val type: String = "",
+)
+
+@Serializable
+data class GitHubTreeCache(
+    val entityTag: String = "",
+    val iconUrl: String? = null,
+)
+
+@Serializable
+data class GitHubIconCacheEntry(
+    val iconUri: String = "",
+    val timestamp: Long = 0L,
 )

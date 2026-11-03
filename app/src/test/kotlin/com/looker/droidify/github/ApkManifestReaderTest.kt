@@ -44,6 +44,7 @@ class ApkManifestReaderTest {
         assertEquals(158L, manifest.versionCode)
         assertEquals("1.58", manifest.versionName)
         assertEquals(23, manifest.minSdkVersion)
+        assertEquals(0x7f040018, manifest.iconResId)
         assertTrue(
             manifest.permissions.containsAll(
                 listOf(
