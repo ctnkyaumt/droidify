@@ -134,6 +134,12 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun setAutoSyncInterval(interval: Duration) {
+        viewModelScope.launch {
+            settingsRepository.setAutoSyncInterval(interval)
+        }
+    }
+
     fun setCleanUpInterval(interval: Duration) {
         viewModelScope.launch {
             settingsRepository.setCleanUpInterval(interval)
@@ -297,6 +303,15 @@ class SettingsViewModel @Inject constructor(
     }
 
     companion object {
+        val autoSyncIntervals: List<Duration> = listOf(
+            1.hours,
+            3.hours,
+            6.hours,
+            12.hours,
+            1.days,
+            2.days,
+        )
+
         val cleanUpIntervals: List<Duration> = listOf(
             6.hours,
             12.hours,

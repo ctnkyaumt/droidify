@@ -6,6 +6,10 @@ import android.content.IntentFilter
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import androidx.work.WorkManager
+import com.looker.droidify.datastore.model.AutoSync
+import com.looker.droidify.work.SyncWorker
+import kotlinx.coroutines.flow.combine
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -122,9 +126,19 @@ class Droidify : Application(), SingletonImageLoader.Factory, Configuration.Prov
                 }
             }
             launch {
-                settingsRepository.get { autoSync }.collectIndexed { index, syncMode ->
-                    // Don't update sync job on initial collect
-                    SyncService.Job.schedule(applicationContext, index > 0, syncMode)
+                combine(
+                    settingsRepository.get { autoSync },
+                    settingsRepository.get { autoSyncInterval },
+                ) { syncMode, syncInterval ->
+                    syncMode to syncInterval
+                }.collectIndexed { index, (syncMode, syncInterval) ->
+
+                    SyncService.Job.schedule(applicationContext, index > 0, syncMode, syncInterval)
+                    if (syncMode == AutoSync.NEVER) {
+                        WorkManager.getInstance(applicationContext).cancelUniqueWork("SyncWorker")
+                    } else {
+                        SyncWorker.schedulePeriodicSync(applicationContext, syncInterval)
+                    }
                 }
             }
             launch {

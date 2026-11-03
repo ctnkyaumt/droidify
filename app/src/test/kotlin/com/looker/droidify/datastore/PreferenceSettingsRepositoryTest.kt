@@ -11,6 +11,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlin.time.Duration.Companion.hours
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -113,6 +114,15 @@ class PreferenceSettingsRepositoryTest {
         val settings = repository.getInitial()
         assertEquals(AutoSync.NEVER, settings.autoSync)
     }
+
+    @Test
+    fun `setAutoSyncInterval updates auto sync interval`() = runTest {
+        repository.setAutoSyncInterval(6.hours)
+        val settings = repository.getInitial()
+        assertEquals(6.hours, settings.autoSyncInterval)
+    }
+
+
 
     @Test
     fun `setSortOrder updates sort order`() = runTest {

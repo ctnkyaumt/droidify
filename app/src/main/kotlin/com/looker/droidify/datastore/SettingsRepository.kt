@@ -45,6 +45,8 @@ interface SettingsRepository {
 
     suspend fun setAutoSync(autoSync: AutoSync)
 
+    suspend fun setAutoSyncInterval(interval: Duration)
+
     suspend fun setSortOrder(sortOrder: SortOrder)
 
     suspend fun setProxyType(proxyType: ProxyType)

@@ -43,6 +43,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.lang.ref.WeakReference
 import javax.inject.Inject
 import kotlin.math.roundToInt
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
@@ -720,7 +721,12 @@ class SyncService : ConnectionService<SyncService.Binder>() {
         }
 
         companion object {
-            fun schedule(context: Context, force: Boolean, autoSync: AutoSync) {
+            fun schedule(
+                context: Context,
+                force: Boolean,
+                autoSync: AutoSync,
+                interval: Duration = 12.hours,
+            ) {
                 val jobScheduler = context.jobScheduler
                 if (autoSync == AutoSync.NEVER) {
                     jobScheduler?.cancel(Constants.JOB_ID_SYNC)
@@ -737,7 +743,7 @@ class SyncService : ConnectionService<SyncService.Binder>() {
                 val isCompleted = jobScheduler?.allPendingJobs
                     ?.any { it.id == Constants.JOB_ID_SYNC } == false
                 if (force || isCompleted) {
-                    val period = 12.hours.inWholeMilliseconds
+                    val period = interval.inWholeMilliseconds
                     val builder = JobInfo.Builder(
                         Constants.JOB_ID_SYNC,
                         ComponentName(context, Job::class.java),

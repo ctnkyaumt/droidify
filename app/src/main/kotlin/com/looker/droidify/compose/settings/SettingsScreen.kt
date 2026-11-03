@@ -32,6 +32,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.looker.droidify.BuildConfig
 import com.looker.droidify.R
 import com.looker.droidify.compose.components.BackButton
+import com.looker.droidify.compose.settings.SettingsViewModel.Companion.autoSyncIntervals
 import com.looker.droidify.compose.settings.SettingsViewModel.Companion.cleanUpIntervals
 import com.looker.droidify.compose.settings.SettingsViewModel.Companion.localeCodesList
 import com.looker.droidify.compose.settings.components.ActionSettingItem
@@ -255,6 +256,15 @@ fun SettingsScreen(
                 )
             }
 
+            if (settings.autoSync != AutoSync.NEVER) {
+                item(key = "setting_auto_sync_interval") {
+                    AutoSyncIntervalSetting(
+                        selectedInterval = settings.autoSyncInterval,
+                        onIntervalSelected = viewModel::setAutoSyncInterval,
+                    )
+                }
+            }
+
             item(key = "setting_clean_up_interval") {
                 CleanUpIntervalSetting(
                     selectedInterval = settings.cleanUpInterval,
@@ -468,6 +478,20 @@ private fun AutoSyncSetting(
                 AutoSync.ALWAYS -> stringResource(R.string.always)
             }
         },
+    )
+}
+
+@Composable
+private fun AutoSyncIntervalSetting(
+    selectedInterval: Duration,
+    onIntervalSelected: (Duration) -> Unit,
+) {
+    SelectionSettingItem(
+        title = stringResource(R.string.auto_sync_interval),
+        selectedValue = selectedInterval,
+        values = autoSyncIntervals,
+        onValueSelected = onIntervalSelected,
+        valueToString = { duration -> duration.toDisplayString() },
     )
 }
 
