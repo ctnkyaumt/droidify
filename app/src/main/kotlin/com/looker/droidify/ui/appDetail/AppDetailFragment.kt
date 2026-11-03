@@ -201,6 +201,11 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
                         // `delay` is cancellable hence it waits for 50 milliseconds to show empty page
                         if (products.isEmpty()) delay(50)
 
+                        val suggestedProductRepo = products.findSuggested(state.installedItem, preferredRepositoryId)
+                        val suggestedRelease = suggestedProductRepo?.first?.let {
+                            UpdateResolver.findSuggestedRelease(it.releases, state.installedItem, primaryPlatform)
+                        } ?: suggestedProductRepo?.first?.selectedReleases?.firstOrNull()
+
                         adapter?.setProducts(
                             context = requireContext(),
                             packageName = viewModel.packageName,
@@ -212,6 +217,7 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
                             allowIncompatibleVersion = state.allowIncompatibleVersions,
                             preferredRepositoryId = preferredRepositoryId,
                             note = note,
+                            suggestedRelease = suggestedRelease,
                         )
                         updateButtons()
                     }

@@ -403,6 +403,7 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
             val showSignature: Boolean,
             val reproducible: Reproducible,
             val isInstalled: Boolean = false,
+            val isSuggested: Boolean = false,
         ) : Item() {
             override val descriptor: String
                 get() = "release.${repository.id}.${release.identifier}"
@@ -784,6 +785,7 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
         allowIncompatibleVersion: Boolean,
         preferredRepositoryId: Long = 0L,
         note: String = "",
+        suggestedRelease: Release? = null,
     ) {
         items.clear()
         val productRepository = products.findSuggested(installedItem, preferredRepositoryId) ?: run {
@@ -1180,6 +1182,9 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
                 val isInstalled = installedTarget != null &&
                     installedTarget.first.identifier == release.identifier &&
                     installedTarget.second.id == repository.id
+                val isSuggested = suggestedRelease != null &&
+                    release.identifier == suggestedRelease.identifier &&
+                    repository.id == productRepository.second.id
                 Item.ReleaseItem(
                     repository = repository,
                     release = release,
@@ -1187,6 +1192,7 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
                     showSignature = release.versionCode in versionsWithMultiSignature,
                     reproducible = rblogs.find { it.hash == release.hash }.toReproducible(),
                     isInstalled = isInstalled,
+                    isSuggested = isSuggested,
                 )
             }
             .sortedByDescending { it.release.versionCode }
@@ -1811,8 +1817,7 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
                 val singlePlatform =
                     if (item.release.platforms.size == 1) item.release.platforms.first() else null
                 val installed = item.isInstalled
-                val suggested =
-                    incompatibility == null && item.release.selected && item.selectedRepository
+                val suggested = incompatibility == null && item.isSuggested
 
                 if (suggested) {
                     holder.itemView.apply {
