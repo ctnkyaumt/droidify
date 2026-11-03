@@ -23,7 +23,7 @@ class InstalledReleaseSelectorTest {
         maxSdkVersion = 0,
         source = "",
         release = "$identifier.apk",
-        hash = "hash_$versionCode",
+        hash = "hash_$identifier",
         hashType = "sha256",
         signature = signature,
         obbMain = "",
@@ -113,7 +113,7 @@ class InstalledReleaseSelectorTest {
 
         assertNotNull(selectedWithPreferred)
         assertEquals(2L, selectedWithPreferred?.second?.id, "Should select release from preferred repo 2")
-        assertEquals("newpipe_official", selectedWithPreferred?.first?.identifier)
+        assertEquals(relNewPipe, selectedWithPreferred?.first)
     }
 
     @Test
