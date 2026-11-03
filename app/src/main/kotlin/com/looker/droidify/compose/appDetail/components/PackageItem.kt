@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.looker.droidify.R
 import com.looker.droidify.data.model.Package
 import com.looker.droidify.data.model.Repo
-import com.looker.droidify.utility.common.formatDate
+import com.looker.droidify.utility.DateFormatter
 import com.looker.droidify.utility.common.sdkName
 
 @Composable
@@ -76,7 +76,7 @@ fun PackageItem(
                 )
             }
             Column(horizontalAlignment = Alignment.End) {
-                val date = remember { formatDate(item.added) }
+                val date = remember { DateFormatter.formatDate(item.added) }
                 Text(
                     text = date,
                     style = MaterialTheme.typography.bodyMedium,

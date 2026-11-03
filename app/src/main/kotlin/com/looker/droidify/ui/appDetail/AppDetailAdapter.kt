@@ -74,7 +74,7 @@ import com.looker.droidify.utility.common.extension.getMutatedIcon
 import com.looker.droidify.utility.common.extension.inflate
 import com.looker.droidify.utility.common.extension.open
 import com.looker.droidify.utility.common.extension.setTextSizeScaled
-import com.looker.droidify.utility.common.formatDate
+import com.looker.droidify.utility.DateFormatter
 import com.looker.droidify.utility.common.nullIfEmpty
 import com.looker.droidify.utility.common.sdkName
 import com.looker.droidify.utility.extension.android.Android
@@ -1876,7 +1876,7 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
 
                 holder.source.text =
                     context.getString(stringRes.provided_by_FORMAT, item.repository.name)
-                val date = formatDate(item.release.added)
+                val date = DateFormatter.formatDate(item.release.added)
                 val relative = if (item.release.added > 0L) {
                     DateUtils.getRelativeTimeSpanString(item.release.added)
                 } else {

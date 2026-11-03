@@ -36,7 +36,7 @@ import com.looker.droidify.model.InstalledItem
 import com.looker.droidify.model.Release
 import com.looker.droidify.model.Repository
 import com.looker.droidify.network.DataSize
-import com.looker.droidify.utility.common.formatDate
+import com.looker.droidify.utility.DateFormatter
 import com.looker.droidify.utility.common.sdkName
 import com.looker.droidify.utility.extension.android.Android
 import java.util.*
@@ -131,7 +131,7 @@ fun ReleaseItem(
 
                 // Date
                 val dateString = remember(release.added) {
-                    val date = formatDate(release.added)
+                    val date = DateFormatter.formatDate(release.added)
                     if (release.added > 0L) {
                         val relative = DateUtils.getRelativeTimeSpanString(release.added)
                         "$date ($relative)"
