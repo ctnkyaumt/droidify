@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -26,24 +27,23 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.looker.droidify.R
 import com.looker.droidify.utility.DateFormatter
-import java.text.SimpleDateFormat
-import java.util.*
 
 @Composable
 fun LastUpdatedCard(
     timestamp: Long?,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     val lastUpdated = remember(timestamp, DateFormatter.useIso8601) {
         buildAnnotatedString {
             append("Last updated: ")
             withStyle(SpanStyle(fontFamily = FontFamily.Monospace)) {
-                timestamp?.let { append(formatDate(it)) }
+                timestamp?.let { append(DateFormatter.formatRepoDate(context, it)) }
             }
         }
     }
 
-    val isToday by remember(timestamp) { derivedStateOf { isToday(timestamp ?: 0) } }
+    val isToday by remember(timestamp) { derivedStateOf { DateUtils.isToday(timestamp ?: 0) } }
     val transition = updateTransition(isToday)
     val backgroundColor by transition.animateColor {
         if (it) {
@@ -90,15 +90,4 @@ fun LastUpdatedCard(
             color = contentColor,
         )
     }
-}
-
-fun isToday(timestamp: Long): Boolean = DateUtils.isToday(timestamp)
-
-private fun formatDate(timestamp: Long): String {
-    if (DateFormatter.useIso8601) {
-        return DateFormatter.formatDate(timestamp)
-    }
-    val date = Date(timestamp)
-    val pattern = if (isToday(timestamp)) "HH:mm" else "yyyy-MM-dd HH:mm"
-    return SimpleDateFormat(pattern, Locale.getDefault()).format(date)
 }
