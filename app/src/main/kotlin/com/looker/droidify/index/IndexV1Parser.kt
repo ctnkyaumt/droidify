@@ -301,6 +301,8 @@ object IndexV1Parser {
                 key.string(KEY_PRODUCT_SUGGESTEDVERSIONCODE) ->
                     suggestedVersionCode =
                         valueAsString.toLongOrNull() ?: 0L
+                key.number(KEY_PRODUCT_SUGGESTEDVERSIONCODE) ->
+                    suggestedVersionCode = valueAsLong
 
                 key.array(KEY_PRODUCT_CATEGORIES) -> categories = collectDistinctNotEmptyStrings()
                 key.array(KEY_PRODUCT_ANTIFEATURES) ->
