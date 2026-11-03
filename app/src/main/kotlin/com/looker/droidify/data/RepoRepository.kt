@@ -17,6 +17,7 @@ import com.looker.droidify.data.model.Repo
 import com.looker.droidify.datastore.SettingsRepository
 import com.looker.droidify.datastore.get
 import com.looker.droidify.di.IoDispatcher
+import com.looker.droidify.model.Repository
 import com.looker.droidify.network.Downloader
 import com.looker.droidify.sync.LocalSyncable
 import com.looker.droidify.sync.SyncState
@@ -203,6 +204,8 @@ class RepoRepository @Inject constructor(
     }
 
     suspend fun sync(repo: Repo, onState: ((SyncState) -> Unit)? = null): Boolean {
+        // GitHub sources are only synced by the legacy RepositoryUpdater
+        if (Repository.gitHubSlugOf(repo.address) != null) return false
         var success = false
         var parsedFingerprint: Fingerprint? = null
         var parsedIndex: IndexV2? = null

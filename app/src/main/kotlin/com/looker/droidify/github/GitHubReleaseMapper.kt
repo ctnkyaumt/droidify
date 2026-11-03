@@ -3,6 +3,7 @@ package com.looker.droidify.github
 import com.looker.droidify.model.Product
 import com.looker.droidify.model.Release
 import com.looker.droidify.sync.JsonParser
+import kotlinx.serialization.builtins.ListSerializer
 import java.time.Instant
 
 /**
@@ -28,10 +29,10 @@ object GitHubReleaseMapper {
     private val SEPARATOR_REGEX = Regex("[-_.\\s]+")
 
     fun parseReleases(json: String): List<GitHubRelease> =
-        JsonParser.decodeFromString<List<GitHubRelease>>(json)
+        JsonParser.decodeFromString(ListSerializer(GitHubRelease.serializer()), json)
 
     fun parseRepoInfo(json: String): GitHubRepoInfo =
-        JsonParser.decodeFromString<GitHubRepoInfo>(json)
+        JsonParser.decodeFromString(GitHubRepoInfo.serializer(), json)
 
     /**
      * Published, non-prerelease releases, newest first, at most [MAX_RELEASES].
