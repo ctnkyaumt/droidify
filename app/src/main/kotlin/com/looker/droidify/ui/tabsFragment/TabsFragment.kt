@@ -34,10 +34,10 @@ import com.google.android.material.tabs.TabLayoutMediator
 import com.looker.droidify.R
 import com.looker.droidify.database.Database
 import com.looker.droidify.databinding.TabsToolbarBinding
-import com.looker.droidify.datastore.extension.sortOrderName
 import com.looker.droidify.datastore.model.SortOrder
 import com.looker.droidify.datastore.model.StartupTab
-import com.looker.droidify.datastore.model.supportedSortOrders
+import com.looker.droidify.ui.SortOrderMenu
+import com.looker.droidify.ui.setupSortOrderMenu
 import com.looker.droidify.model.ProductItem
 import com.looker.droidify.service.Connection
 import com.looker.droidify.service.SyncService
@@ -93,7 +93,7 @@ class TabsFragment : ScreenFragment() {
 
     private var favouritesItem: MenuItem? = null
     private var searchMenuItem: MenuItem? = null
-    private var sortOrderMenu: Pair<MenuItem, List<MenuItem>>? = null
+    private var sortOrderMenu: SortOrderMenu? = null
     private var syncRepositoriesMenuItem: MenuItem? = null
     private var layout: Layout? = null
     private var sectionsList: RecyclerView? = null
@@ -222,20 +222,9 @@ class TabsFragment : ScreenFragment() {
                     true
                 }
 
-            sortOrderMenu = addSubMenu(0, 0, 0, stringRes.sorting_order)
-                .setIcon(toolbar.context.getMutatedIcon(R.drawable.ic_sort))
-                .let { menu ->
-                    menu.item.setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_ALWAYS)
-                    val menuItems = supportedSortOrders().map { sortOrder ->
-                        menu.add(context.sortOrderName(sortOrder))
-                            .setOnMenuItemClickListener {
-                                viewModel.setSortOrder(sortOrder)
-                                true
-                            }
-                    }
-                    menu.setGroupCheckable(0, true, true)
-                    Pair(menu.item, menuItems)
-                }
+            sortOrderMenu = setupSortOrderMenu(toolbar.context) {
+                viewModel.setSortOrder(it)
+            }
 
             favouritesItem = add(1, 0, 0, stringRes.favourites)
                 .setIcon(toolbar.context.getMutatedIcon(R.drawable.ic_favourite_checked))
@@ -590,7 +579,7 @@ class TabsFragment : ScreenFragment() {
     }
 
     private fun updateOrder(sortOrder: SortOrder) {
-        sortOrderMenu!!.second[sortOrder.ordinal].isChecked = true
+        sortOrderMenu?.setChecked(sortOrder)
     }
 
     private fun updateSections(
@@ -699,7 +688,7 @@ class TabsFragment : ScreenFragment() {
         override fun onPageSelected(position: Int) {
             val source = AppListFragment.Source.entries[position]
             updateUpdateNotificationBlocker(source)
-            sortOrderMenu!!.first.apply {
+            sortOrderMenu?.menuItem?.apply {
                 setShowAsActionFlags(
                     if (resources.configuration.screenWidthDp >= 300) {
                         MenuItem.SHOW_AS_ACTION_ALWAYS
