@@ -38,6 +38,15 @@ class ArscParser private constructor(
         private const val RES_TABLE_TYPE_TYPE = 0x0201
         private const val RES_TABLE_TYPE_SPEC_TYPE = 0x0202
 
+        // ResTable_type flags
+        private const val FLAG_SPARSE = 0x01
+        private const val FLAG_OFFSET16 = 0x02
+        private const val NO_ENTRY_OFFSET16 = 0xFFFF
+
+        // ResTable_entry flags
+        private const val ENTRY_FLAG_COMPLEX = 0x0001
+        private const val ENTRY_FLAG_COMPACT = 0x0008
+
         private const val TYPE_REFERENCE = 0x01
         private const val TYPE_STRING = 0x03
 
@@ -166,20 +175,37 @@ class ArscParser private constructor(
         val entryCount = prefix.getInt(12)
         val entriesStart = prefix.getInt(16)
         val density = if (prefix.limit() >= 36) prefix.u16(34) else 0
-        if (targetEntry !in 0 until entryCount) return
-
-        val offsetPos = chunkPos + chunkHeaderSize + targetEntry * 4L
-        if (offsetPos + 4 > source.size) return
-        val entryOffset = source.readBuffer(offsetPos, 4).getInt(0)
-        if (entryOffset == -1) return
+        val typeFlags = prefix.get(9).toInt() and 0xFF
+        val offsetsPos = chunkPos + chunkHeaderSize
+        val entryOffset: Long = when (typeFlags) {
+            0 -> {
+                if (targetEntry !in 0 until entryCount) return
+                val offsetPos = offsetsPos + targetEntry * 4L
+                if (offsetPos + 4 > source.size) return
+                val offset = source.readBuffer(offsetPos, 4).getInt(0)
+                if (offset == -1) return
+                offset.toLong()
+            }
+            FLAG_SPARSE -> findSparseOffset(offsetsPos, entryCount, targetEntry) ?: return
+            FLAG_OFFSET16 -> {
+                if (targetEntry !in 0 until entryCount) return
+                val offsetPos = offsetsPos + targetEntry * 2L
+                if (offsetPos + 2 > source.size) return
+                val offset = source.readBuffer(offsetPos, 2).u16(0)
+                if (offset == NO_ENTRY_OFFSET16) return
+                offset * 4L
+            }
+            // Unknown layout, do not guess
+            else -> return
+        }
 
         val entryPos = chunkPos + entriesStart + entryOffset
         if (entryPos < 0 || entryPos + 8 > source.size) return
         val entry = source.readBuffer(entryPos, 8)
         val entrySize = entry.u16(0)
         val flags = entry.u16(2)
-        // Simple entry (not complex/bag)
-        if ((flags and 0x0001) != 0) return
+        // Simple entry only: not complex/bag, not compact
+        if ((flags and (ENTRY_FLAG_COMPLEX or ENTRY_FLAG_COMPACT)) != 0) return
 
         val valuePos = entryPos + entrySize
         if (valuePos + 8 > source.size) return
@@ -194,6 +220,27 @@ class ArscParser private constructor(
         } else if (valType == TYPE_REFERENCE && valData != 0 && valData != resId) {
             candidates.addAll(resolveResId(valData, maxDepth - 1))
         }
+    }
+
+    /**
+     * Offset of [targetEntry] in a sparse type chunk: [count] sorted pairs of
+     * (u16 entry index, u16 offset / 4), or null when it has no such entry.
+     */
+    private suspend fun findSparseOffset(pairsPos: Long, count: Int, targetEntry: Int): Long? {
+        if (count <= 0 || pairsPos + count * 4L > source.size) return null
+        var low = 0
+        var high = count - 1
+        while (low <= high) {
+            val mid = (low + high) ushr 1
+            val pair = source.readBuffer(pairsPos + mid * 4L, 4)
+            val index = pair.u16(0)
+            when {
+                index == targetEntry -> return pair.u16(2) * 4L
+                index < targetEntry -> low = mid + 1
+                else -> high = mid - 1
+            }
+        }
+        return null
     }
 
     private suspend fun readString(index: Int): String? {
