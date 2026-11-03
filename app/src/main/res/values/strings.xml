@@ -57,6 +57,7 @@
     <string name="error_shizuku_not_granted_DESC">The Shizuku/Sui permission hasn\'t been granted</string>
     <string name="error_shizuku_not_installed">Shizuku/Sui not installed</string>
     <string name="error_shizuku_not_installed_DESC">Shizuku/Sui isn\'t installed</string>
+    <string name="error_root_not_available">Root access unavailable or revoked. Please verify root access or switch installer in Settings.</string>
 
     <string name="import_export">Backup and restore</string>
     <string name="import_settings_title">Import favourites and settings</string>
