@@ -17,6 +17,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.looker.droidify.database.CursorOwner
 import com.looker.droidify.databinding.RecyclerViewWithFabBinding
 import com.looker.droidify.model.ProductItem
+import com.looker.droidify.service.Connection
+import com.looker.droidify.service.DownloadService
 import com.looker.droidify.ui.tabsFragment.TabsFragment
 import com.looker.droidify.utility.common.Scroller
 import com.looker.droidify.utility.common.extension.dp
@@ -26,6 +28,9 @@ import com.looker.droidify.utility.extension.mainActivity
 import com.looker.droidify.utility.getParcelableCompat
 import com.looker.droidify.widget.RecyclerFastScroller
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import com.looker.droidify.R.string as stringRes
 
@@ -69,6 +74,24 @@ class AppListFragment() : Fragment(), CursorOwner.Callback {
 
     private var searchQuery: String = ""
 
+    private val updateAllRequested = MutableStateFlow(false)
+    private val downloadState = MutableStateFlow(DownloadService.DownloadState())
+    private var downloadStateJob: Job? = null
+    private val downloadConnection = Connection(
+        serviceClass = DownloadService::class.java,
+        onBind = { _, binder ->
+            downloadStateJob?.cancel()
+            downloadStateJob = lifecycleScope.launch {
+                binder.downloadState.collect { downloadState.value = it }
+            }
+        },
+        onUnbind = { _, _ ->
+            downloadStateJob?.cancel()
+            downloadStateJob = null
+            downloadState.value = DownloadService.DownloadState()
+        },
+    )
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -94,10 +117,34 @@ class AppListFragment() : Fragment(), CursorOwner.Callback {
         }
         with(binding.updateAll) {
             if (source.updateAll) {
-                setOnClickListener { (parentFragment as? TabsFragment)?.updateAll() }
+                downloadConnection.bind(requireContext())
+                setOnClickListener {
+                    val tabsFragment = parentFragment as? TabsFragment
+                    if (tabsFragment != null) {
+                        updateAllRequested.value = true
+                        tabsFragment.updateAll { updateAllRequested.value = false }
+                    }
+                }
                 viewLifecycleOwner.lifecycleScope.launch {
                     viewModel.showUpdateAllButton.collect {
                         isVisible = it
+                    }
+                }
+                viewLifecycleOwner.lifecycleScope.launch {
+                    combine(updateAllRequested, downloadState) { requested, state ->
+                        when {
+                            state.batchTotal > 0 -> false to getString(
+                                stringRes.updating_progress_FORMAT,
+                                (state.batchCompleted + 1).coerceAtMost(state.batchTotal),
+                                state.batchTotal,
+                            )
+
+                            requested -> false to getString(stringRes.updating_all)
+                            else -> true to getString(stringRes.update_all)
+                        }
+                    }.collect { (enabled, label) ->
+                        isEnabled = enabled
+                        text = label
                     }
                 }
                 systemBarsMargin(16.dp)
@@ -145,6 +192,7 @@ class AppListFragment() : Fragment(), CursorOwner.Callback {
         super.onDestroyView()
         _binding = null
         scroller = null
+        if (source.updateAll) downloadConnection.unbind(requireContext())
         mainActivity.cursorOwner.detach(this)
     }
 

@@ -473,11 +473,17 @@ class TabsFragment : ScreenFragment() {
 
     private var lastUpdateAllClickTime = 0L
 
-    internal fun updateAll() {
+    internal fun updateAll(onQueued: () -> Unit = {}) {
         val now = android.os.SystemClock.elapsedRealtime()
-        if (now - lastUpdateAllClickTime < 1500L) return
+        if (now - lastUpdateAllClickTime < 1500L) return onQueued()
         lastUpdateAllClickTime = now
-        lifecycleScope.launch { syncConnection.binder?.updateAllApps() }
+        lifecycleScope.launch {
+            try {
+                syncConnection.binder?.updateAllApps()
+            } finally {
+                onQueued()
+            }
+        }
     }
 
     private fun updateUpdateNotificationBlocker(activeSource: AppListFragment.Source) {
