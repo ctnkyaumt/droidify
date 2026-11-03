@@ -34,9 +34,11 @@ class TabsViewModel @Inject constructor(
         .get { sortOrder }
         .asStateFlow(SortOrder.UPDATED)
 
-    val startupTab = settingsRepository
-        .get { startupTab }
-        .asStateFlow(StartupTab.AVAILABLE)
+    /**
+     * The startup tab as actually stored. Reads the settings store instead of a StateFlow
+     * whose initial placeholder value would be returned before the settings are loaded.
+     */
+    suspend fun startupTab(): StartupTab = settingsRepository.getInitial().startupTab
 
     val allowHomeScreenSwiping = settingsRepository
         .get { homeScreenSwiping }

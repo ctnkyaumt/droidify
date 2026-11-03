@@ -57,7 +57,6 @@ import com.looker.droidify.widget.addDivider
 import dagger.hilt.android.AndroidEntryPoint
 import kotlin.math.abs
 import kotlin.math.roundToInt
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.looker.droidify.R.string as stringRes
 
@@ -302,7 +301,7 @@ class TabsFragment : ScreenFragment() {
 
         if (savedInstanceState == null && !needSelectUpdates) {
             viewLifecycleOwner.lifecycleScope.launch {
-                val tab = viewModel.startupTab.first()
+                val tab = viewModel.startupTab()
                 if (savedInstanceState == null && !needSelectUpdates && tab != StartupTab.AVAILABLE) {
                     viewPager?.setCurrentItem(tab.ordinal, false)
                 }
