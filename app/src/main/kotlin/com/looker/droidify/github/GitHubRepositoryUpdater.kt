@@ -175,7 +175,7 @@ object GitHubRepositoryUpdater {
                     }
                 }
             }
-            writeIconCache(iconCacheFile, iconCache)
+            writeIconCache(context, repository.id, iconCacheFile, iconCache)
 
             val products = GitHubReleaseMapper.map(
                 repositoryId = repository.id,
@@ -273,7 +273,12 @@ object GitHubRepositoryUpdater {
 
         val now = System.currentTimeMillis()
         if (resolved != null) {
-            val uri = saveIconFile(context, repositoryId, packageName, resolved.extension, resolved.bytes)
+            val (extension, bytes) = if (resolved.fromAdaptiveForeground) {
+                AdaptiveIconCrop.cropToVisibleArea(resolved.bytes) ?: (resolved.extension to resolved.bytes)
+            } else {
+                resolved.extension to resolved.bytes
+            }
+            val uri = saveIconFile(context, repositoryId, packageName, extension, bytes)
             iconCache[cacheKey] = GitHubIconCacheEntry(iconUri = uri, timestamp = now)
             resolvedIcons[packageName] = uri
         } else {
@@ -444,7 +449,8 @@ object GitHubRepositoryUpdater {
 
     private fun iconCacheFile(context: Context, repositoryId: Long): File =
         // v2: 1.1.0 cached "none" for icons it resolved from outdated probe entries
-        File(File(context.filesDir, PROBE_CACHE_DIR), "icon_v2_$repositoryId.json")
+        // v3: adaptive icon foregrounds are cropped to their visible area now
+        File(File(context.filesDir, PROBE_CACHE_DIR), "icon_v3_$repositoryId.json")
 
     private fun readIconCache(file: File): Map<String, GitHubIconCacheEntry> = try {
         if (file.exists()) {
@@ -463,12 +469,39 @@ object GitHubRepositoryUpdater {
         emptyMap()
     }
 
-    private fun writeIconCache(file: File, entries: Map<String, GitHubIconCacheEntry>) {
+    private fun writeIconCache(
+        context: Context,
+        repositoryId: Long,
+        file: File,
+        entries: Map<String, GitHubIconCacheEntry>,
+    ) {
         try {
             file.parentFile?.mkdirs()
             file.writeText(JsonParser.encodeToString(iconCacheSerializer, entries))
         } catch (e: IOException) {
             Log.w(TAG, "Could not write icon cache", e)
+            return
+        }
+        deleteUnreferencedIcons(context, repositoryId, entries)
+    }
+
+    /**
+     * Deletes the icon files of the repository which the icon cache does not point to anymore
+     * (older formats, other extensions, removed apps). Files are named `<repositoryId>_<package>.<ext>`.
+     */
+    private fun deleteUnreferencedIcons(
+        context: Context,
+        repositoryId: Long,
+        entries: Map<String, GitHubIconCacheEntry>,
+    ) {
+        val referenced = entries.values.map { it.iconUri.removePrefix("file://") }.toSet()
+        val files = File(File(context.filesDir, PROBE_CACHE_DIR), "icons")
+            .listFiles { file -> file.isFile && file.name.startsWith("${repositoryId}_") }
+            ?: return
+        for (file in files) {
+            if (file.absolutePath !in referenced && !file.delete()) {
+                Log.w(TAG, "Could not delete unused icon ${file.name}")
+            }
         }
     }
 

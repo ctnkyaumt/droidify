@@ -14,6 +14,8 @@ object ApkIconResolver {
         val path: String,
         val extension: String,
         val bytes: ByteArray,
+        // Raster layer of an adaptive icon, which has a transparent safe zone around the logo
+        val fromAdaptiveForeground: Boolean = false,
     )
 
     suspend fun resolveIcon(
@@ -76,7 +78,12 @@ object ApkIconResolver {
                                 val bytes = ApkManifestReader.readEntry(reader, fgEntry, MAX_ICON_SIZE)
                                 val format = ContentSniffer.sniffRasterFormat(bytes)
                                 if (format != null) {
-                                    return ResolvedIcon(path = fgCandidate.path, extension = format.extension, bytes = bytes)
+                                    return ResolvedIcon(
+                                        path = fgCandidate.path,
+                                        extension = format.extension,
+                                        bytes = bytes,
+                                        fromAdaptiveForeground = true,
+                                    )
                                 }
                             }
                         }
@@ -87,7 +94,12 @@ object ApkIconResolver {
                             val bytes = ApkManifestReader.readEntry(reader, fgEntry, MAX_ICON_SIZE)
                             val format = ContentSniffer.sniffRasterFormat(bytes)
                             if (format != null) {
-                                return ResolvedIcon(path = fg.path, extension = format.extension, bytes = bytes)
+                                return ResolvedIcon(
+                                    path = fg.path,
+                                    extension = format.extension,
+                                    bytes = bytes,
+                                    fromAdaptiveForeground = true,
+                                )
                             }
                         }
                     }
