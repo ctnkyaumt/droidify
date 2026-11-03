@@ -100,7 +100,9 @@ class UnarchiveWorker @AssistedInject constructor(
         val sig = packageInfo.singleSignature?.calculateHash()
 
         val product = Database.ProductAdapter.getArchivedApp(packageName)
-            .filter { it.compatible && (sig == null || it.signatures.contains(sig)) }
+            .filter {
+                it.compatible && (sig == null || it.signatures.isEmpty() || it.signatures.contains(sig))
+            }
             .maxByOrNull { it.versionCode }
         if (product == null) {
             Log.e(TAG, "doWork: failed to find a matching app for $packageName")

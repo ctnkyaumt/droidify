@@ -1705,7 +1705,8 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
                 val singlePlatform =
                     if (item.release.platforms.size == 1) item.release.platforms.first() else null
                 val installed = installedItem?.versionCode == item.release.versionCode &&
-                    installedItem?.signature == item.release.signature
+                    (item.release.signature.isEmpty() ||
+                        installedItem?.signature == item.release.signature)
                 val suggested =
                     incompatibility == null && item.release.selected && item.selectedRepository
 
