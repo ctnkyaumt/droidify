@@ -7,6 +7,7 @@ import android.content.pm.PackageInstaller
 import android.os.Build
 import com.looker.droidify.R
 import com.looker.droidify.data.model.toPackageName
+import com.looker.droidify.database.Database
 import com.looker.droidify.installer.InstallManager
 import com.looker.droidify.installer.model.InstallState
 import com.looker.droidify.utility.common.Constants.NOTIFICATION_CHANNEL_INSTALL
@@ -66,6 +67,9 @@ class SessionInstallerReceiver : BroadcastReceiver() {
         if (packageName != null) {
             when (status) {
                 PackageInstaller.STATUS_SUCCESS -> {
+                    if (isUninstall) {
+                        Database.InstalledAdapter.delete(packageName)
+                    }
                     notificationManager?.removeInstallNotification(packageName)
                     val notification = context.createInstallNotification(
                         appName = (appName ?: packageName.substringAfterLast('.')).toString(),

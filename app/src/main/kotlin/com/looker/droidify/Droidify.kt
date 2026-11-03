@@ -95,6 +95,7 @@ class Droidify : Application(), SingletonImageLoader.Factory, Configuration.Prov
                 IntentFilter().apply {
                     addAction(Intent.ACTION_PACKAGE_ADDED)
                     addAction(Intent.ACTION_PACKAGE_REMOVED)
+                    addAction(Intent.ACTION_PACKAGE_FULLY_REMOVED)
                     addDataScheme("package")
                 },
             )
