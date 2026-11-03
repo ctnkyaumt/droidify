@@ -66,8 +66,11 @@ class EditRepositoryFragment() : ScreenFragment() {
     private var _binding: EditRepositoryBinding? = null
     private val binding get() = _binding!!
 
+    // Bundle.getLong returns 0 for a missing key, so check the key: a new repository has no id
     private val repoId: Long?
-        get() = arguments?.getLong(EXTRA_REPOSITORY_ID)
+        get() = arguments?.let {
+            if (it.containsKey(EXTRA_REPOSITORY_ID)) it.getLong(EXTRA_REPOSITORY_ID) else null
+        }
 
     private val repoAddress: String?
         get() = arguments?.getString(EXTRA_REPOSITORY_ADDRESS)
