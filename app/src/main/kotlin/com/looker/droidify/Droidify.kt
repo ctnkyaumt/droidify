@@ -167,13 +167,52 @@ class Droidify : Application(), SingletonImageLoader.Factory, Configuration.Prov
 private class FallbackIconInterceptor : Interceptor {
     override suspend fun intercept(chain: Interceptor.Chain): ImageResult {
         val request = chain.request
-        val result = chain.proceed()
+        val initialResult = chain.proceed()
+        if (initialResult is SuccessResult) return initialResult
 
-        if (result is SuccessResult) return result
+        val originalData = when (val data = request.data) {
+            is String -> data
+            is android.net.Uri -> data.toString()
+            else -> data?.toString() ?: return initialResult
+        }
 
-        val fallbackIconUrl = request.newBuilder()
-            .data((request.data as String).replaceAfterLast('/', "icon.png"))
-            .build()
-        return chain.withRequest(fallbackIconUrl).proceed()
+        if (!originalData.startsWith("http://") && !originalData.startsWith("https://")) {
+            return initialResult
+        }
+
+        val fallbacks = mutableListOf<String>()
+
+        // 1. If icons-DPI directory, fall back to default /icons/ directory with same filename
+        if (originalData.contains(Regex("/icons-\d+/"))) {
+            fallbacks.add(originalData.replace(Regex("/icons-\d+/"), "/icons/"))
+        }
+
+        // 2. Replace filename with icon.png (handling scanner bug or missing specific icon)
+        val withIconPng = originalData.replaceAfterLast('/', "icon.png")
+        if (withIconPng != originalData) {
+            fallbacks.add(withIconPng)
+        }
+
+        // 3. If icons-DPI was replaced with icon.png, also try /icons/icon.png
+        if (originalData.contains(Regex("/icons-\d+/"))) {
+            fallbacks.add(withIconPng.replace(Regex("/icons-\d+/"), "/icons/"))
+        }
+
+        // 4. If localized metadata icon like .../en-US/icon.png, fallback to .../icon.png
+        val strippedLocale = withIconPng.replace(Regex("/[a-zA-Z]{2,3}(?:-[a-zA-Z0-9]+)?/icon\.png$"), "/icon.png")
+        if (strippedLocale != withIconPng) {
+            fallbacks.add(strippedLocale)
+        }
+
+        for (fallbackUrl in fallbacks.distinct()) {
+            if (fallbackUrl == originalData) continue
+            val fallbackRequest = request.newBuilder().data(fallbackUrl).build()
+            val result = chain.withRequest(fallbackRequest).proceed()
+            if (result is SuccessResult) {
+                return result
+            }
+        }
+
+        return initialResult
     }
 }

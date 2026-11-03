@@ -272,7 +272,7 @@ private fun AppItem(
             .then(modifier),
     ) {
         Spacer(modifier = Modifier.size(12.dp))
-        var icon by remember { mutableStateOf(app.icon?.path) }
+        var icon by remember(app.icon?.path) { mutableStateOf(app.icon?.path) }
         if (icon != null) {
             AsyncImage(
                 model = icon,

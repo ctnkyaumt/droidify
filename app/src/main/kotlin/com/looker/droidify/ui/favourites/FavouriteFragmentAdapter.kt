@@ -69,9 +69,9 @@ class FavouriteFragmentAdapter(
         holder.summary.isVisible = item.summary.isNotEmpty()
         holder.summary.text = item.summary
 
-        if (repository != null) {
-            val iconUrl = item.icon(holder.icon, repository)
-            holder.icon.load(iconUrl) {
+        val iconUrl = repository?.let { item.icon(holder.icon, it) }
+        holder.icon.load(iconUrl) {
+            if (repository != null) {
                 authentication(repository.authentication)
             }
         }
