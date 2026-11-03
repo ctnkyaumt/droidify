@@ -22,7 +22,7 @@ jobs:
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
       - name: Compile and run unit tests
-        run: ./gradlew :app:compileDebugKotlin :app:testDebugUnitTest --continue
+        run: ./gradlew :app:compileDebugKotlin :app:testDebugUnitTest --continue --stacktrace
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
