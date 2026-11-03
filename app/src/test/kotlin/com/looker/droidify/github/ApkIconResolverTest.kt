@@ -47,6 +47,18 @@ class ApkIconResolverTest {
     }
 
     @Test
+    fun `raster density ranking deprioritizes anydpi and nodpi`() {
+        assertEquals(640, ArscParser.rasterDensityScore(640))
+        assertEquals(480, ArscParser.rasterDensityScore(480))
+        assertEquals(320, ArscParser.rasterDensityScore(320))
+        assertEquals(240, ArscParser.rasterDensityScore(240))
+        assertEquals(160, ArscParser.rasterDensityScore(160))
+        assertEquals(0, ArscParser.rasterDensityScore(0))
+        assertEquals(-1, ArscParser.rasterDensityScore(0xFFFE))
+        assertEquals(-1, ArscParser.rasterDensityScore(0xFFFF))
+    }
+
+    @Test
     fun `returns null when resId is zero or invalid`() = runTest {
         val reader = InMemoryRangeReader(apk)
 

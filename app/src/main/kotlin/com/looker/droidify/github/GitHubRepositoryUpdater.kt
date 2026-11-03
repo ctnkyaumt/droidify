@@ -40,9 +40,11 @@ object GitHubRepositoryUpdater {
     private const val RELEASES_PER_PAGE = 15
 
     private const val PROBE_CACHE_DIR = "github"
+    private const val ICON_RETRY_INTERVAL_MILLIS = 7L * 24 * 60 * 60 * 1000 // 7 days
 
     private val probeCacheSerializer = MapSerializer(String.serializer(), ApkManifest.serializer())
-    private val iconCacheSerializer = MapSerializer(String.serializer(), String.serializer())
+    private val iconCacheSerializer =
+        MapSerializer(String.serializer(), GitHubIconCacheEntry.serializer())
 
     suspend fun update(
         context: Context,
@@ -132,36 +134,37 @@ object GitHubRepositoryUpdater {
                     resolvedIcons[packageName] = treeIconUrl
                     continue
                 }
-                val newestAsset = stable
-                    .flatMap { it.assets }
-                    .firstOrNull { probed[it.cacheKey]?.packageName == packageName }
 
-                if (newestAsset != null) {
-                    val cachedUri = iconCache[newestAsset.cacheKey]
-                    if (cachedUri != null) {
-                        if (cachedUri != "none") {
-                            val localPath = cachedUri.removePrefix("file://")
-                            if (File(localPath).exists()) {
-                                resolvedIcons[packageName] = cachedUri
-                            } else {
-                                resolveAndStoreApkIcon(
-                                    context = context,
-                                    downloader = downloader,
-                                    repositoryId = repository.id,
-                                    packageName = packageName,
-                                    asset = newestAsset,
-                                    manifest = probed[newestAsset.cacheKey]!!,
-                                    iconCache = iconCache,
-                                    resolvedIcons = resolvedIcons,
-                                )
-                            }
-                        }
+                val cacheKey = "${repository.id}_$packageName"
+                val cached = iconCache[cacheKey]
+
+                val shouldResolve = if (cached == null) {
+                    true
+                } else if (cached.iconUri != "none") {
+                    val localPath = cached.iconUri.removePrefix("file://")
+                    if (File(localPath).exists()) {
+                        resolvedIcons[packageName] = cached.iconUri
+                        false
                     } else {
+                        true
+                    }
+                } else {
+                    val elapsed = System.currentTimeMillis() - cached.timestamp
+                    elapsed >= ICON_RETRY_INTERVAL_MILLIS
+                }
+
+                if (shouldResolve) {
+                    val newestAsset = stable
+                        .flatMap { it.assets }
+                        .firstOrNull { probed[it.cacheKey]?.packageName == packageName }
+
+                    if (newestAsset != null) {
                         resolveAndStoreApkIcon(
                             context = context,
                             downloader = downloader,
                             repositoryId = repository.id,
                             packageName = packageName,
+                            cacheKey = cacheKey,
                             asset = newestAsset,
                             manifest = probed[newestAsset.cacheKey]!!,
                             iconCache = iconCache,
@@ -170,9 +173,6 @@ object GitHubRepositoryUpdater {
                     }
                 }
             }
-            // Only keep entries for current assets
-            val activeKeys = assets.map { it.cacheKey }.toSet()
-            iconCache.keys.retainAll(activeKeys)
             writeIconCache(iconCacheFile, iconCache)
 
             val products = GitHubReleaseMapper.map(
@@ -250,9 +250,10 @@ object GitHubRepositoryUpdater {
         downloader: Downloader,
         repositoryId: Long,
         packageName: String,
+        cacheKey: String,
         asset: GitHubAsset,
         manifest: ApkManifest,
-        iconCache: MutableMap<String, String>,
+        iconCache: MutableMap<String, GitHubIconCacheEntry>,
         resolvedIcons: MutableMap<String, String>,
     ) {
         val resolved = try {
@@ -268,12 +269,13 @@ object GitHubRepositoryUpdater {
             null
         }
 
+        val now = System.currentTimeMillis()
         if (resolved != null) {
             val uri = saveIconFile(context, repositoryId, packageName, resolved.extension, resolved.bytes)
-            iconCache[asset.cacheKey] = uri
+            iconCache[cacheKey] = GitHubIconCacheEntry(iconUri = uri, timestamp = now)
             resolvedIcons[packageName] = uri
         } else {
-            iconCache[asset.cacheKey] = "none"
+            iconCache[cacheKey] = GitHubIconCacheEntry(iconUri = "none", timestamp = now)
         }
     }
 
@@ -440,9 +442,15 @@ object GitHubRepositoryUpdater {
     private fun iconCacheFile(context: Context, repositoryId: Long): File =
         File(File(context.filesDir, PROBE_CACHE_DIR), "icon_$repositoryId.json")
 
-    private fun readIconCache(file: File): Map<String, String> = try {
+    private fun readIconCache(file: File): Map<String, GitHubIconCacheEntry> = try {
         if (file.exists()) {
-            JsonParser.decodeFromString(iconCacheSerializer, file.readText())
+            try {
+                JsonParser.decodeFromString(iconCacheSerializer, file.readText())
+            } catch (_: Exception) {
+                val oldSerializer = MapSerializer(String.serializer(), String.serializer())
+                val old = JsonParser.decodeFromString(oldSerializer, file.readText())
+                old.mapValues { GitHubIconCacheEntry(iconUri = it.value, timestamp = 0L) }
+            }
         } else {
             emptyMap()
         }
@@ -451,7 +459,7 @@ object GitHubRepositoryUpdater {
         emptyMap()
     }
 
-    private fun writeIconCache(file: File, entries: Map<String, String>) {
+    private fun writeIconCache(file: File, entries: Map<String, GitHubIconCacheEntry>) {
         try {
             file.parentFile?.mkdirs()
             file.writeText(JsonParser.encodeToString(iconCacheSerializer, entries))

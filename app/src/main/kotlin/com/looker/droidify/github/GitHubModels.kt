@@ -65,3 +65,9 @@ data class GitHubTreeCache(
     val entityTag: String = "",
     val iconUrl: String? = null,
 )
+
+@Serializable
+data class GitHubIconCacheEntry(
+    val iconUri: String = "",
+    val timestamp: Long = 0L,
+)

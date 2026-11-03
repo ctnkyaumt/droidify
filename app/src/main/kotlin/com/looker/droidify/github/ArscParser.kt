@@ -33,21 +33,16 @@ class ArscParser(private val bytes: ByteArray) {
         private const val TYPE_REFERENCE = 0x01
         private const val TYPE_STRING = 0x03
 
-        fun isRaster(path: String): Boolean =
-            path.endsWith(".png", ignoreCase = true) ||
-            path.endsWith(".webp", ignoreCase = true) ||
-            path.endsWith(".jpg", ignoreCase = true) ||
-            path.endsWith(".jpeg", ignoreCase = true)
-
-        fun densityScore(density: Int): Int = when (density) {
-            640 -> 640 // xxxhdpi
-            480 -> 480 // xxhdpi
-            320 -> 320 // xhdpi
-            240 -> 240 // hdpi
-            213 -> 213 // tvdpi
-            160 -> 160 // mdpi
-            120 -> 120 // ldpi
-            0 -> 1     // nodpi
+        fun rasterDensityScore(density: Int): Int = when (density) {
+            0xFFFE, 0xFFFF -> -1 // Exclude anydpi / nodpi from physical raster ranking
+            0 -> 0              // Default / any density last
+            640 -> 640          // xxxhdpi
+            480 -> 480          // xxhdpi
+            320 -> 320          // xhdpi
+            240 -> 240          // hdpi
+            213 -> 213          // tvdpi
+            160 -> 160          // mdpi
+            120 -> 120          // ldpi
             else -> density
         }
     }
