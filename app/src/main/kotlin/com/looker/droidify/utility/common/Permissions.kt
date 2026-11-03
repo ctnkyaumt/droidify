@@ -11,6 +11,18 @@ import androidx.core.net.toUri
 import com.looker.droidify.utility.common.extension.intent
 import com.looker.droidify.utility.common.extension.powerManager
 
+const val PERMISSION_ACCESS_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"
+
+fun Context.hasLocalNetworkPermission(): Boolean =
+    if (Build.VERSION.SDK_INT >= 37) {
+        ContextCompat.checkSelfPermission(
+            this,
+            PERMISSION_ACCESS_LOCAL_NETWORK,
+        ) == PackageManager.PERMISSION_GRANTED
+    } else {
+        true
+    }
+
 fun Context.isIgnoreBatteryEnabled() =
     powerManager?.isIgnoringBatteryOptimizations(packageName) == true
 

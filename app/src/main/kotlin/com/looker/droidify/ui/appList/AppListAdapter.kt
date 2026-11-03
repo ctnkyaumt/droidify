@@ -153,14 +153,14 @@ class AppListAdapter(
             ViewType.PRODUCT -> {
                 holder as ProductViewHolder
                 val productItem = getProductItem(position)
-                holder.name.text = productItem.name
+                holder.name.text = productItem.name.ifBlank { productItem.packageName }
                 holder.summary.text = productItem.summary
                 holder.summary.isVisible = productItem.summary.isNotEmpty() &&
                     productItem.name != productItem.summary
                 val repository = repositories[productItem.repositoryId]
-                if (repository != null) {
-                    val iconUrl = productItem.icon(view = holder.icon, repository = repository)
-                    holder.icon.load(iconUrl) {
+                val iconUrl = repository?.let { productItem.icon(view = holder.icon, repository = it) }
+                holder.icon.load(iconUrl) {
+                    if (repository != null) {
                         authentication(repository.authentication)
                     }
                 }

@@ -33,6 +33,9 @@ interface RepoDao {
     @Query("SELECT * FROM category GROUP BY category.defaultName")
     fun categories(): Flow<List<CategoryEntity>>
 
+    @Query("SELECT * FROM category")
+    fun allCategories(): Flow<List<CategoryEntity>>
+
     @Query(
         """
         SELECT * FROM category

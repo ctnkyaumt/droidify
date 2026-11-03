@@ -57,6 +57,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -82,18 +83,22 @@ class SyncService : ConnectionService<SyncService.Binder>() {
         var autoUpdateStartedFor: List<String> = emptyList()
 
         fun forceSyncAll(context: Context) {
-            Database.RepositoryAdapter.getAll().forEach {
-                if (it.lastModified.isNotEmpty() || it.entityTag.isNotEmpty()) {
-                    Database.RepositoryAdapter.put(it.copy(lastModified = "", entityTag = ""))
+            CoroutineScope(Dispatchers.IO).launch {
+                Database.RepositoryAdapter.getAll().forEach {
+                    if (it.lastModified.isNotEmpty() || it.entityTag.isNotEmpty()) {
+                        Database.RepositoryAdapter.put(it.copy(lastModified = "", entityTag = ""))
+                    }
+                }
+                withContext(Dispatchers.Main) {
+                    Connection(
+                        SyncService::class.java,
+                        onBind = { connection, binder ->
+                            binder.sync(SyncRequest.FORCE)
+                            connection.unbind(context)
+                        },
+                    ).bind(context)
                 }
             }
-            Connection(
-                SyncService::class.java,
-                onBind = { connection, binder ->
-                    binder.sync(SyncRequest.FORCE)
-                    connection.unbind(context)
-                },
-            ).bind(context)
         }
     }
 

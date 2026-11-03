@@ -14,14 +14,20 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.looker.droidify.BuildConfig
 import com.looker.droidify.R
@@ -67,10 +73,23 @@ fun SettingsScreen(
     val context = LocalContext.current
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val customButtons by viewModel.customButtons.collectAsStateWithLifecycle()
-    val isBackgroundAllowed by viewModel.isBackgroundAllowed.collectAsStateWithLifecycle()
+    var isBackgroundAllowed by remember(context) {
+        mutableStateOf(context.isIgnoreBatteryEnabled())
+    }
 
-    LaunchedEffect(Unit) {
-        viewModel.updateBackgroundAccessState(context.isIgnoreBatteryEnabled())
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val allowed = context.isIgnoreBatteryEnabled()
+                isBackgroundAllowed = allowed
+                viewModel.updateBackgroundAccessState(allowed)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     val exportSettingsLauncher = rememberLauncherForActivityResult(
@@ -130,28 +149,30 @@ fun SettingsScreen(
                 .padding(contentPadding),
         ) {
             if (!isBackgroundAllowed && settings.autoSync != AutoSync.NEVER) {
-                item {
+                item(key = "warning_banner") {
                     WarningBanner(
                         title = stringResource(R.string.require_background_access),
                         description = stringResource(R.string.require_background_access_DESC),
                         onClick = {
                             context.requestBatteryFreedom()
-                            viewModel.updateBackgroundAccessState(context.isIgnoreBatteryEnabled())
+                            val allowed = context.isIgnoreBatteryEnabled()
+                            isBackgroundAllowed = allowed
+                            viewModel.updateBackgroundAccessState(allowed)
                         },
                     )
                 }
             }
 
-            item { SettingHeader(title = stringResource(R.string.prefs_personalization)) }
+            item(key = "header_personalization") { SettingHeader(title = stringResource(R.string.prefs_personalization)) }
 
-            item {
+            item(key = "setting_language") {
                 LanguageSetting(
                     selectedLanguage = settings.language,
                     onLanguageSelected = viewModel::setLanguage,
                 )
             }
 
-            item {
+            item(key = "setting_theme") {
                 ThemeSetting(
                     selectedTheme = settings.theme,
                     onThemeSelected = viewModel::setTheme,
@@ -159,7 +180,7 @@ fun SettingsScreen(
             }
 
             if (SdkCheck.isSnowCake) {
-                item {
+                item(key = "setting_dynamic_theme") {
                     SwitchSettingItem(
                         title = stringResource(R.string.material_you),
                         description = stringResource(R.string.material_you_desc),
@@ -169,7 +190,7 @@ fun SettingsScreen(
                 }
             }
 
-            item {
+            item(key = "setting_home_screen_swiping") {
                 SwitchSettingItem(
                     title = stringResource(R.string.home_screen_swiping),
                     description = stringResource(R.string.home_screen_swiping_DESC),
@@ -178,9 +199,9 @@ fun SettingsScreen(
                 )
             }
 
-            item { SettingHeader(title = stringResource(R.string.updates)) }
+            item(key = "header_updates") { SettingHeader(title = stringResource(R.string.updates)) }
 
-            item {
+            item(key = "setting_auto_update") {
                 SwitchSettingItem(
                     title = stringResource(R.string.auto_update),
                     description = stringResource(R.string.auto_update_apps),
@@ -189,7 +210,7 @@ fun SettingsScreen(
                 )
             }
 
-            item {
+            item(key = "setting_notify_updates") {
                 SwitchSettingItem(
                     title = stringResource(R.string.notify_about_updates),
                     description = stringResource(R.string.notify_about_updates_summary),
@@ -198,7 +219,7 @@ fun SettingsScreen(
                 )
             }
 
-            item {
+            item(key = "setting_unstable_updates") {
                 SwitchSettingItem(
                     title = stringResource(R.string.unstable_updates),
                     description = stringResource(R.string.unstable_updates_summary),
@@ -207,7 +228,7 @@ fun SettingsScreen(
                 )
             }
 
-            item {
+            item(key = "setting_incompatible_versions") {
                 SwitchSettingItem(
                     title = stringResource(R.string.incompatible_versions),
                     description = stringResource(R.string.incompatible_versions_summary),
@@ -216,7 +237,7 @@ fun SettingsScreen(
                 )
             }
 
-            item {
+            item(key = "setting_ignore_signature") {
                 SwitchSettingItem(
                     title = stringResource(R.string.ignore_signature),
                     description = stringResource(R.string.ignore_signature_summary),
@@ -225,16 +246,16 @@ fun SettingsScreen(
                 )
             }
 
-            item { SettingHeader(title = stringResource(R.string.sync_repositories)) }
+            item(key = "header_sync") { SettingHeader(title = stringResource(R.string.sync_repositories)) }
 
-            item {
+            item(key = "setting_auto_sync") {
                 AutoSyncSetting(
                     selectedAutoSync = settings.autoSync,
                     onAutoSyncSelected = viewModel::setAutoSync,
                 )
             }
 
-            item {
+            item(key = "setting_clean_up_interval") {
                 CleanUpIntervalSetting(
                     selectedInterval = settings.cleanUpInterval,
                     onIntervalSelected = viewModel::setCleanUpInterval,
@@ -242,7 +263,7 @@ fun SettingsScreen(
             }
 
             if (settings.cleanUpInterval == Duration.INFINITE) {
-                item {
+                item(key = "setting_force_clean_up") {
                     ActionSettingItem(
                         title = stringResource(R.string.force_clean_up),
                         description = stringResource(R.string.force_clean_up_DESC),
@@ -251,7 +272,7 @@ fun SettingsScreen(
                 }
             }
 
-            item {
+            item(key = "setting_reproducibility_logs") {
                 SwitchSettingItem(
                     title = stringResource(R.string.reproducibility_logs),
                     description = stringResource(R.string.reproducibility_logs_summary),
@@ -260,9 +281,9 @@ fun SettingsScreen(
                 )
             }
 
-            item { SettingHeader(title = stringResource(R.string.install_types)) }
+            item(key = "header_install_types") { SettingHeader(title = stringResource(R.string.install_types)) }
 
-            item {
+            item(key = "setting_installer_type") {
                 InstallerTypeSetting(
                     selectedInstaller = settings.installerType,
                     onInstallerSelected = { viewModel.setInstaller(context, it) },
@@ -270,7 +291,7 @@ fun SettingsScreen(
             }
 
             if (settings.installerType == InstallerType.LEGACY) {
-                item {
+                item(key = "setting_legacy_installer") {
                     LegacyInstallerComponentSetting(
                         selectedComponent = settings.legacyInstallerComponent,
                         onComponentSelected = viewModel::setLegacyInstallerComponent,
@@ -279,7 +300,7 @@ fun SettingsScreen(
             }
 
             if (settings.installerType != InstallerType.LEGACY) {
-                item {
+                item(key = "setting_delete_apk") {
                     SwitchSettingItem(
                         title = stringResource(R.string.delete_apk_on_install),
                         description = stringResource(R.string.delete_apk_on_install_summary),
@@ -289,9 +310,9 @@ fun SettingsScreen(
                 }
             }
 
-            item { SettingHeader(title = stringResource(R.string.proxy)) }
+            item(key = "header_proxy") { SettingHeader(title = stringResource(R.string.proxy)) }
 
-            item {
+            item(key = "setting_proxy_type") {
                 ProxyTypeSetting(
                     selectedProxyType = settings.proxy.type,
                     onProxyTypeSelected = viewModel::setProxyType,
@@ -299,7 +320,7 @@ fun SettingsScreen(
             }
 
             if (settings.proxy.type != ProxyType.DIRECT) {
-                item {
+                item(key = "setting_proxy_host") {
                     TextInputSettingItem(
                         title = stringResource(R.string.proxy_host),
                         value = settings.proxy.host,
@@ -307,7 +328,7 @@ fun SettingsScreen(
                     )
                 }
 
-                item {
+                item(key = "setting_proxy_port") {
                     TextInputSettingItem(
                         title = stringResource(R.string.proxy_port),
                         value = settings.proxy.port.toString(),
@@ -316,9 +337,9 @@ fun SettingsScreen(
                 }
             }
 
-            item { SettingHeader(title = stringResource(R.string.import_export)) }
+            item(key = "header_import_export") { SettingHeader(title = stringResource(R.string.import_export)) }
 
-            item {
+            item(key = "setting_import_settings") {
                 ActionSettingItem(
                     title = stringResource(R.string.import_settings_title),
                     description = stringResource(R.string.import_settings_DESC),
@@ -326,7 +347,7 @@ fun SettingsScreen(
                 )
             }
 
-            item {
+            item(key = "setting_export_settings") {
                 ActionSettingItem(
                     title = stringResource(R.string.export_settings_title),
                     description = stringResource(R.string.export_settings_DESC),
@@ -334,7 +355,7 @@ fun SettingsScreen(
                 )
             }
 
-            item {
+            item(key = "setting_import_repos") {
                 ActionSettingItem(
                     title = stringResource(R.string.import_repos_title),
                     description = stringResource(R.string.import_repos_DESC),
@@ -342,7 +363,7 @@ fun SettingsScreen(
                 )
             }
 
-            item {
+            item(key = "setting_export_repos") {
                 ActionSettingItem(
                     title = stringResource(R.string.export_repos_title),
                     description = stringResource(R.string.export_repos_DESC),
@@ -350,9 +371,9 @@ fun SettingsScreen(
                 )
             }
 
-            item { SettingHeader(title = stringResource(R.string.custom_buttons_section)) }
+            item(key = "header_custom_buttons") { SettingHeader(title = stringResource(R.string.custom_buttons_section)) }
 
-            item {
+            item(key = "setting_custom_buttons") {
                 CustomButtonsSettingItem(
                     buttons = customButtons,
                     onAddButton = viewModel::addCustomButton,
@@ -363,9 +384,9 @@ fun SettingsScreen(
                 )
             }
 
-            item { SettingHeader(title = stringResource(R.string.credits)) }
+            item(key = "header_credits") { SettingHeader(title = stringResource(R.string.credits)) }
 
-            item {
+            item(key = "setting_credits_special") {
                 ActionSettingItem(
                     title = stringResource(R.string.special_credits),
                     description = FOXY_DROID_TITLE,
@@ -373,7 +394,7 @@ fun SettingsScreen(
                 )
             }
 
-            item {
+            item(key = "setting_credits_version") {
                 val currentVersion = remember {
                     context.packageManager
                         .getPackageInfoCompat(context.packageName)!!

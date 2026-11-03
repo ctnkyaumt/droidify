@@ -1,6 +1,12 @@
 package com.looker.droidify.ui.repository
 
+import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import com.looker.droidify.utility.isLocalHost
+import com.looker.droidify.utility.common.PERMISSION_ACCESS_LOCAL_NETWORK
+import com.looker.droidify.utility.common.hasLocalNetworkPermission
 import android.text.Selection
 import android.util.Base64
 import android.view.MenuItem
@@ -73,6 +79,24 @@ class EditRepositoryFragment() : ScreenFragment() {
     private var checkJob: Job? = null
 
     private var takenAddresses = emptySet<String>()
+
+    private var pendingSaveCheck: Boolean? = null
+
+    private val localNetworkPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { isGranted ->
+        val check = pendingSaveCheck
+        pendingSaveCheck = null
+        if (isGranted && check != null) {
+            proceedSaveRepository(check)
+        } else if (!isGranted) {
+            Toast.makeText(
+                requireContext(),
+                R.string.local_network_permission_required,
+                Toast.LENGTH_SHORT,
+            ).show()
+        }
+    }
 
     @Inject
     lateinit var downloader: Downloader
@@ -384,51 +408,66 @@ class EditRepositoryFragment() : ScreenFragment() {
                 failedAddressCheck()
                 return
             }
-            // GitHub sources: no index to probe, no fingerprint and no credentials to send
-            val gitHubAddress = Repository.normalizeGitHubAddress(address)
-            if (gitHubAddress != null) {
-                onSaveRepositoryProceedInvalidate(gitHubAddress, "", "")
-                return
+            if (Build.VERSION.SDK_INT >= 37 && isLocalHost(address)) {
+                if (!requireContext().hasLocalNetworkPermission()) {
+                    pendingSaveCheck = check
+                    localNetworkPermissionLauncher.launch(PERMISSION_ACCESS_LOCAL_NETWORK)
+                    return
+                }
             }
-            val fingerprint = binding.fingerprint.text.toString().replace(" ", "")
-            val username = binding.username.text.toString().nullIfEmpty()
-            val password = binding.password.text.toString().nullIfEmpty()
-            val authentication = if (username != null && password != null) {
-                "Basic " + Base64.encodeToString(
-                    "$username:$password".toByteArray(Charset.defaultCharset()),
-                    Base64.NO_WRAP,
-                )
-            } else ""
+            proceedSaveRepository(check)
+        }
+    }
 
-            if (check) {
-                checkJob = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
-                    val resultAddress = try {
-                        checkAddress(address, authentication)
-                    } catch (e: Exception) {
-                        e.exceptCancellation()
-                        failedAddressCheck()
-                        null
-                    }
-                    val allow = resultAddress == address || run {
-                        if (resultAddress == null) return@run false
-                        binding.address.setText(resultAddress)
-                        invalidateAddress(resultAddress)
-                        !addressError
-                    }
-                    if (allow && resultAddress != null) {
-                        onSaveRepositoryProceedInvalidate(
-                            resultAddress,
-                            fingerprint,
-                            authentication,
-                        )
-                    } else {
-                        invalidateState()
-                    }
+    private fun proceedSaveRepository(check: Boolean) {
+        val address = normalizeAddress(binding.address.text.toString()) ?: kotlin.run {
+            failedAddressCheck()
+            return
+        }
+        // GitHub sources: no index to probe, no fingerprint and no credentials to send
+        val gitHubAddress = Repository.normalizeGitHubAddress(address)
+        if (gitHubAddress != null) {
+            onSaveRepositoryProceedInvalidate(gitHubAddress, "", "")
+            return
+        }
+        val fingerprint = binding.fingerprint.text.toString().replace(" ", "")
+        val username = binding.username.text.toString().nullIfEmpty()
+        val password = binding.password.text.toString().nullIfEmpty()
+        val authentication = if (username != null && password != null) {
+            "Basic " + Base64.encodeToString(
+                "$username:$password".toByteArray(Charset.defaultCharset()),
+                Base64.NO_WRAP,
+            )
+        } else ""
+
+        if (check) {
+            checkJob = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                val resultAddress = try {
+                    checkAddress(address, authentication)
+                } catch (e: Exception) {
+                    e.exceptCancellation()
+                    failedAddressCheck()
+                    null
+                }
+                val allow = resultAddress == address || run {
+                    if (resultAddress == null) return@run false
+                    binding.address.setText(resultAddress)
+                    invalidateAddress(resultAddress)
+                    !addressError
+                }
+                if (allow && resultAddress != null) {
+                    onSaveRepositoryProceedInvalidate(
+                        resultAddress,
+                        fingerprint,
+                        authentication,
+                    )
+                } else {
                     invalidateState()
                 }
-            } else {
-                onSaveRepositoryProceedInvalidate(address, fingerprint, authentication)
+                invalidateState()
             }
+        } else {
+            onSaveRepositoryProceedInvalidate(address, fingerprint, authentication)
         }
     }
 

@@ -518,7 +518,7 @@ class TabsFragment : ScreenFragment() {
     private fun updateSection(section: ProductItem.Section) {
         layout?.sectionName?.text = when (section) {
             is ProductItem.Section.All -> getString(stringRes.all_applications)
-            is ProductItem.Section.Category -> section.name
+            is ProductItem.Section.Category -> section.localizedName
             is ProductItem.Section.Repository -> section.name
         }
         productFragments.filter { it.source.sections }.forEach { it.setSection(section) }
@@ -743,7 +743,7 @@ class TabsFragment : ScreenFragment() {
                     stringRes.all_applications,
                 )
 
-                is ProductItem.Section.Category -> section.name
+                is ProductItem.Section.Category -> section.localizedName
                 is ProductItem.Section.Repository -> section.name
             }
         }

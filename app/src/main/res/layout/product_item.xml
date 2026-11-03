@@ -40,9 +40,10 @@
 
                     <TextView
                         android:id="@+id/name"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:singleLine="true"
+                        android:ellipsize="end"
+                        android:maxLines="1"
                         android:textAppearance="?textAppearanceBody1" />
                 </FrameLayout>
 
@@ -51,16 +52,18 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:maxWidth="80dp"
-                    android:singleLine="true"
+                    android:ellipsize="end"
+                    android:maxLines="1"
                     android:textAppearance="?textAppearanceLabelMedium" />
 
             </LinearLayout>
 
             <TextView
                 android:id="@+id/summary"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:singleLine="true"
+                android:ellipsize="end"
+                android:maxLines="1"
                 android:textAppearance="?textAppearanceBody2"
                 android:textColor="?attr/colorOutline" />
         </LinearLayout>

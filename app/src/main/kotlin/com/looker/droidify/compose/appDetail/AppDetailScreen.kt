@@ -57,6 +57,7 @@ import com.looker.droidify.data.model.FilePath
 import com.looker.droidify.data.model.Package
 import com.looker.droidify.data.model.Repo
 import com.looker.droidify.datastore.model.CustomButton
+import com.looker.droidify.utility.CategoryLocalization
 import com.looker.droidify.utility.text.toAnnotatedString
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -368,7 +369,7 @@ private fun CategoriesRow(categories: List<String>) {
                 selected = false,
                 onClick = { },
                 enabled = true,
-                label = { Text(cat) },
+                label = { Text(CategoryLocalization.getLocalizedName(cat)) },
             )
         }
     }
