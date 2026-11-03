@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import com.looker.droidify.database.Database
+import com.looker.droidify.service.FailedUpdateTracker
 import com.looker.droidify.utility.common.extension.getPackageInfoCompat
 import com.looker.droidify.utility.extension.toInstalledItem
 
@@ -16,14 +17,21 @@ class InstalledAppReceiver(
         val packageName =
             intent.data?.let { if (it.scheme == "package") it.schemeSpecificPart else null }
         if (packageName != null) {
+            val isReplacing = intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)
             when (intent.action.orEmpty()) {
-                Intent.ACTION_PACKAGE_ADDED,
-                Intent.ACTION_PACKAGE_REMOVED,
-                -> {
+                Intent.ACTION_PACKAGE_ADDED -> {
+                    FailedUpdateTracker.recordSuccess(packageName)
                     val packageInfo = packageManager.getPackageInfoCompat(packageName)
                     if (packageInfo != null) {
                         Database.InstalledAdapter.put(packageInfo.toInstalledItem())
-                    } else {
+                    }
+                }
+
+                Intent.ACTION_PACKAGE_REMOVED,
+                Intent.ACTION_PACKAGE_FULLY_REMOVED,
+                -> {
+                    FailedUpdateTracker.recordSuccess(packageName)
+                    if (!isReplacing) {
                         Database.InstalledAdapter.delete(packageName)
                     }
                 }

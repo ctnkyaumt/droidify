@@ -108,6 +108,8 @@ class SyncService : ConnectionService<SyncService.Binder>() {
             val stage: RepositoryUpdater.Stage,
             val read: DataSize,
             val total: DataSize?,
+            val completedTasks: Int = 0,
+            val totalTasks: Int = 1,
         ) : State(appName)
 
         data object Finish : State("")
@@ -116,11 +118,20 @@ class SyncService : ConnectionService<SyncService.Binder>() {
             get() = when (this) {
                 is Connecting -> Int.MIN_VALUE
                 Finish -> Int.MAX_VALUE
-                is Syncing -> when (stage) {
-                    RepositoryUpdater.Stage.DOWNLOAD -> ((read percentBy total) * 0.4F).roundToInt()
-                    RepositoryUpdater.Stage.PROCESS -> 50
-                    RepositoryUpdater.Stage.MERGE -> 75
-                    RepositoryUpdater.Stage.COMMIT -> 90
+                is Syncing -> {
+                    val stagePercent = when (stage) {
+                        RepositoryUpdater.Stage.DOWNLOAD -> ((read percentBy total) * 0.4F).roundToInt()
+                        RepositoryUpdater.Stage.PROCESS -> 50
+                        RepositoryUpdater.Stage.MERGE -> 75
+                        RepositoryUpdater.Stage.COMMIT -> 90
+                    }
+                    if (totalTasks > 1) {
+                        val base = (completedTasks.toFloat() / totalTasks.toFloat()) * 100f
+                        val taskWeight = 100f / totalTasks.toFloat()
+                        (base + (stagePercent.toFloat() / 100f) * taskWeight).roundToInt().coerceIn(0, 100)
+                    } else {
+                        stagePercent
+                    }
                 }
             }
     }
@@ -137,6 +148,8 @@ class SyncService : ConnectionService<SyncService.Binder>() {
 
     private var started = Started.NO
     private var foregroundFailed = false
+    private var totalSyncTasks = 0
+    private var completedSyncTasks = 0
     private val tasks = mutableListOf<Task>()
     private var currentTask: CurrentTask? = null
 
@@ -162,6 +175,8 @@ class SyncService : ConnectionService<SyncService.Binder>() {
                 it !in currentIds &&
                     it != currentTask?.task?.repositoryId
             }.map { Task(it, manual) }
+            totalSyncTasks = tasks.size + (if (currentTask != null) 1 else 0)
+            completedSyncTasks = 0
             handleNextTask(cancelledTask?.hasUpdates == true, settings)
             if (request != SyncRequest.AUTO && started == Started.AUTO) {
                 started = Started.MANUAL
@@ -189,10 +204,18 @@ class SyncService : ConnectionService<SyncService.Binder>() {
             }
         }
 
+        private var updatingAll = false
+
         suspend fun updateAllApps() = withContext(Dispatchers.IO) {
-            val skipSignature = settingsRepository.getInitial().ignoreSignature
-            val updates = Database.ProductAdapter.getUpdates(skipSignature)
-            updateAllAppsInternal(updates)
+            if (updatingAll) return@withContext
+            updatingAll = true
+            try {
+                val skipSignature = settingsRepository.getInitial().ignoreSignature
+                val updates = Database.ProductAdapter.getUpdates(skipSignature)
+                updateAllAppsInternal(updates)
+            } finally {
+                updatingAll = false
+            }
         }
 
         fun setUpdateNotificationBlocker(fragment: Fragment?) {
@@ -512,6 +535,8 @@ class SyncService : ConnectionService<SyncService.Binder>() {
                     handleUpdates(settings)
                 }
             }
+            completedSyncTasks = 0
+            totalSyncTasks = 0
             return
         }
         val task = tasks.removeAt(0)
@@ -561,6 +586,8 @@ class SyncService : ConnectionService<SyncService.Binder>() {
                             stage = stage,
                             read = DataSize(progress),
                             total = total?.let { DataSize(it) },
+                            completedTasks = completedSyncTasks,
+                            totalTasks = maxOf(1, totalSyncTasks),
                         ),
                     )
                 }
@@ -603,13 +630,14 @@ class SyncService : ConnectionService<SyncService.Binder>() {
                 if (settings.autoUpdate) {
                     autoUpdating = true
                     autoUpdateStartedFor = updates.map { it.packageName }
-                    updateAllAppsInternal(updates)
+                    updateAllAppsInternal(updates, isAutoUpdate = true)
                 }
             }
 
             syncState.emit(State.Finish)
         } finally {
             withContext(NonCancellable) {
+                completedSyncTasks++
                 lock.withLock { currentTask = null }
                 handleNextTask(false, settings)
             }
@@ -618,6 +646,7 @@ class SyncService : ConnectionService<SyncService.Binder>() {
 
     private suspend fun updateAllAppsInternal(
         updates: List<ProductItem>,
+        isAutoUpdate: Boolean = false,
     ) = withContext(Dispatchers.IO) {
         updates
             // Update Droid-ify the last
@@ -635,6 +664,7 @@ class SyncService : ConnectionService<SyncService.Binder>() {
                     installItem.packageName,
                     installItem,
                     productRepo,
+                    isAutoUpdate = isAutoUpdate,
                 )
             }
     }

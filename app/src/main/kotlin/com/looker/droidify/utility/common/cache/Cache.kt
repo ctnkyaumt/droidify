@@ -67,13 +67,19 @@ object Cache {
     fun getReleaseFile(context: Context, cacheFileName: String): File {
         return File(ensureCacheDir(context, RELEASE_DIR), cacheFileName).apply {
             sdkAbove(Build.VERSION_CODES.N) {
-                // Make readable for package installer
-                val cacheDir = context.cacheDir.parentFile!!.parentFile!!
-                generateSequence(this) { it.parentFile!! }.takeWhile { it != cacheDir }.forEach {
-                    when {
-                        it.isDirectory -> applyOrMode(it, 0b001001001)
-                        it.isFile -> applyOrMode(it, 0b100100100)
+                try {
+                    // Make readable for package installer
+                    val cacheDir = context.cacheDir.parentFile?.parentFile
+                    if (cacheDir != null) {
+                        generateSequence(this) { it.parentFile }.takeWhile { it != null && it != cacheDir }.forEach {
+                            when {
+                                it.isDirectory -> applyOrMode(it, 0b001001001)
+                                it.isFile -> applyOrMode(it, 0b100100100)
+                            }
+                        }
                     }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
         }

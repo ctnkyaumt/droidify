@@ -320,6 +320,7 @@ class TabsFragment : ScreenFragment() {
                     }
                 }
                 launch {
+                    var maxProgress = 0
                     SyncService.syncState.collect {
                         when (it) {
                             is SyncService.State.Connecting -> {
@@ -328,12 +329,17 @@ class TabsFragment : ScreenFragment() {
                             }
 
                             SyncService.State.Finish -> {
+                                maxProgress = 0
                                 tabsBinding.syncState.isGone = true
                             }
 
                             is SyncService.State.Syncing -> {
                                 tabsBinding.syncState.isVisible = true
-                                tabsBinding.syncState.setProgressCompat(it.progress, true)
+                                if (tabsBinding.syncState.isIndeterminate) {
+                                    tabsBinding.syncState.isIndeterminate = false
+                                }
+                                maxProgress = maxOf(maxProgress, it.progress)
+                                tabsBinding.syncState.setProgressCompat(maxProgress, true)
                             }
                         }
                     }
@@ -465,7 +471,12 @@ class TabsFragment : ScreenFragment() {
 
     internal fun selectUpdates() = selectUpdatesInternal(true)
 
+    private var lastUpdateAllClickTime = 0L
+
     internal fun updateAll() {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (now - lastUpdateAllClickTime < 1500L) return
+        lastUpdateAllClickTime = now
         lifecycleScope.launch { syncConnection.binder?.updateAllApps() }
     }
 

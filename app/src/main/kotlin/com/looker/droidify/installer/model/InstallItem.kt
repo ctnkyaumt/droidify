@@ -6,4 +6,5 @@ class InstallItem(
     val packageName: PackageName,
     val installFileName: String,
     val unarchiveId: Int? = null,
+    val versionCode: Long = 0L,
 )

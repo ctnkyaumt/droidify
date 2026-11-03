@@ -14,10 +14,12 @@ import com.looker.droidify.installer.installers.session.SessionInstaller
 import com.looker.droidify.installer.installers.shizuku.ShizukuInstaller
 import com.looker.droidify.installer.model.InstallItem
 import com.looker.droidify.installer.model.InstallState
+import com.looker.droidify.service.FailedUpdateTracker
 import com.looker.droidify.service.SyncService
 import com.looker.droidify.utility.common.Constants
 import com.looker.droidify.utility.common.cache.Cache
 import com.looker.droidify.utility.common.extension.addAndCompute
+import com.looker.droidify.utility.common.extension.getPackageName
 import com.looker.droidify.utility.common.extension.filter
 import com.looker.droidify.utility.common.extension.notificationManager
 import com.looker.droidify.utility.common.extension.updateAsMutable
@@ -106,12 +108,31 @@ class InstallManager(
                         "Install failed for ${item.packageName.name}",
                         e,
                     )
+                    val appName = (context.packageManager.getPackageName(item.packageName.name)
+                        ?: item.packageName.name.substringAfterLast('.')).toString()
+                    val notification = context.createInstallNotification(
+                        appName = appName,
+                        state = InstallState.Failed,
+                    ) {
+                        setContentText(context.getString(com.looker.droidify.R.string.unknown_error_DESC))
+                    }
+                    notificationManager?.installNotification(
+                        packageName = item.packageName.name,
+                        notification = notification,
+                    )
                     InstallState.Failed
+                }
+                if (result == InstallState.Installed) {
+                    FailedUpdateTracker.recordSuccess(item.packageName.name)
+                } else if (result == InstallState.Failed && item.versionCode > 0L) {
+                    FailedUpdateTracker.recordFailure(item.packageName.name, item.versionCode)
                 }
                 if (result == InstallState.Installed && installer !is LegacyInstaller) {
                     if (deleteApkPreference.first()) {
                         val apkFile = Cache.getReleaseFile(context, item.installFileName)
-                        apkFile.delete()
+                        if (apkFile.exists()) {
+                            apkFile.delete()
+                        }
                     }
                 }
                 if (result == InstallState.Installed && SyncService.autoUpdating) {
@@ -129,7 +150,9 @@ class InstallManager(
                         }
                     }
                 }
-                notificationManager?.removeInstallNotification(item.packageName.name)
+                if (result != InstallState.Failed) {
+                    notificationManager?.removeInstallNotification(item.packageName.name)
+                }
                 updateState { put(item.packageName, result) }
                 currentQueue.remove(item.packageName.name)
             }

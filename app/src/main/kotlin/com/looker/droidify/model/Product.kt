@@ -80,7 +80,10 @@ data class Product(
         get() = selectedReleases.firstOrNull()?.incompatibilities?.isEmpty() == true
 
     val signatures: List<String>
-        get() = selectedReleases.mapNotNull { it.signature.ifBlank { null } }.distinct().toList()
+        get() = releases.filter { it.incompatibilities.isEmpty() }
+            .mapNotNull { it.signature.ifBlank { null } }
+            .distinct()
+            .ifEmpty { selectedReleases.mapNotNull { it.signature.ifBlank { null } }.distinct().toList() }
 
     fun item(): ProductItem {
         return ProductItem(
@@ -99,9 +102,7 @@ data class Product(
     }
 
     fun canUpdate(installedItem: InstalledItem?): Boolean {
-        // No known signatures (GitHub sources): Android itself enforces the update signature
-        return installedItem != null && compatible && versionCode > installedItem.versionCode &&
-            (signatures.isEmpty() || installedItem.signature in signatures)
+        return UpdateResolver.canUpdate(installedItem, releases)
     }
 }
 
@@ -110,9 +111,10 @@ fun List<Pair<Product, Repository>>.findSuggested(
 ): Pair<Product, Repository>? = maxWithOrNull(
     compareBy(
         { (product, _) ->
-            val isSameSignature = installedItem == null || product.signatures.isEmpty() ||
-                installedItem.signature in product.signatures
-            product.compatible && (isSameSignature)
+            val suggested = UpdateResolver.findSuggestedRelease(product.releases, installedItem)
+            val isSameSignature = installedItem == null ||
+                (suggested != null && UpdateResolver.isSignatureCompatible(installedItem.signatures, suggested.signature))
+            product.compatible && isSameSignature
         },
         { (product, _) ->
             product.versionCode

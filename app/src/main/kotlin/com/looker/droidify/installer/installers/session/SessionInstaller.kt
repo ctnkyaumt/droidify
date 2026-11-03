@@ -32,6 +32,10 @@ class SessionInstaller(private val context: Context) : Installer {
         installItem: InstallItem,
     ): InstallState = suspendCancellableCoroutine { cont ->
         val cacheFile = Cache.getReleaseFile(context, installItem.installFileName)
+        if (!cacheFile.exists() || cacheFile.length() == 0L) {
+            cont.resume(InstallState.Failed)
+            return@suspendCancellableCoroutine
+        }
         val id = installer.createSession(sessionParams(installItem))
 
         val callback = object : PackageInstaller.SessionCallback() {

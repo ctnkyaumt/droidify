@@ -23,6 +23,23 @@ val PackageInfo.singleSignature: Signature?
         signatures?.let { if (it.size == 1) it[0] else null }
     }
 
+val PackageInfo.allSignatures: List<Signature>
+    get() = if (SdkCheck.isPie) {
+        val info = signingInfo
+        when {
+            info == null -> emptyList()
+            info.hasMultipleSigners() -> info.apkContentsSigners?.toList().orEmpty()
+            info.hasPastSigningCertificates() -> info.signingCertificateHistory?.toList().orEmpty()
+            else -> info.apkContentsSigners?.toList().orEmpty()
+        }
+    } else {
+        @Suppress("DEPRECATION")
+        signatures?.toList().orEmpty()
+    }
+
+val PackageInfo.allSignatureHashes: List<String>
+    get() = allSignatures.map { it.calculateHash() }.distinct()
+
 fun Signature.calculateHash() = sha256(toByteArray()).hex()
 
 @Suppress("DEPRECATION")
