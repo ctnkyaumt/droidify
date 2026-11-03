@@ -64,7 +64,8 @@ object GitHubRepositoryUpdater {
                 context = context,
                 downloader = downloader,
                 url = "$API_URL/repos/$owner/$name/releases?per_page=$RELEASES_PER_PAGE",
-                entityTag = repository.entityTag,
+                // Sync fully once if the app icons were never resolved for this repository
+                entityTag = if (iconCacheFile(context, repository.id).exists()) repository.entityTag else "",
             ) ?: return@withContext Result.Success(false)
             val releases = GitHubReleaseMapper.parseReleases(releasesResponse.body)
 
