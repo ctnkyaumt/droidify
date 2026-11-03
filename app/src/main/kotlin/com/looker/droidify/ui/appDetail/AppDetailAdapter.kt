@@ -79,6 +79,7 @@ import com.looker.droidify.utility.extension.android.Android
 import com.looker.droidify.utility.extension.resources.TypefaceExtra
 import com.looker.droidify.utility.extension.resources.sizeScaled
 import com.looker.droidify.utility.text.formatHtml
+import com.looker.droidify.utility.text.markdownOrHtmlToHtml
 import com.looker.droidify.widget.StableRecyclerAdapter
 import java.util.*
 import kotlin.math.PI
@@ -985,9 +986,19 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
             items += Item.TextItem(TextType.ANTI_FEATURES, antiFeaturesText)
         }
 
-        val changes = productRepository.first.whatsNew
-        if (changes.isNotEmpty()) {
+        val rawChanges = productRepository.first.whatsNew
+        if (rawChanges.isNotEmpty()) {
             items += Item.SectionItem(SectionType.CHANGES)
+            val changes = formatHtml(markdownOrHtmlToHtml(rawChanges)) { url ->
+                val uri = try {
+                    url.toUri()
+                } catch (_: Exception) {
+                    null
+                }
+                if (uri != null) {
+                    callbacks.onUriClick(uri, true)
+                }
+            }
             val cropped =
                 if (ExpandType.CHANGES !in expanded) {
                     changes.lineCropped(12, 10)
