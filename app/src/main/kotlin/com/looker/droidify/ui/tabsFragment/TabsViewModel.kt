@@ -3,7 +3,9 @@ package com.looker.droidify.ui.tabsFragment
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.looker.droidify.data.local.dao.RepoDao
 import com.looker.droidify.database.Database
+import com.looker.droidify.utility.CategoryLocalization
 import com.looker.droidify.datastore.SettingsRepository
 import com.looker.droidify.datastore.get
 import com.looker.droidify.datastore.model.SortOrder
@@ -21,6 +23,7 @@ import kotlinx.coroutines.launch
 class TabsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val savedStateHandle: SavedStateHandle,
+    private val repoDao: RepoDao,
 ) : ViewModel() {
 
     val currentSection =
@@ -37,11 +40,21 @@ class TabsViewModel @Inject constructor(
     val sections = combine(
         Database.CategoryAdapter.getAllStream(),
         Database.RepositoryAdapter.getEnabledStream(),
-    ) { categories, repos ->
+        repoDao.allCategories(),
+        settingsRepository.get { language },
+    ) { categories, repos, repoCategories, language ->
+        repoCategories.forEach {
+            CategoryLocalization.register(it.defaultName, it.locale, it.name)
+        }
         if (repos.isEmpty()) setSection(ProductItem.Section.All)
         buildList {
             add(ProductItem.Section.All)
-            categories.sorted().mapTo(this, ProductItem.Section::Category)
+            categories.sorted().mapTo(this) { categoryName ->
+                ProductItem.Section.Category(
+                    name = categoryName,
+                    localizedName = CategoryLocalization.getLocalizedName(categoryName, language),
+                )
+            }
             repos.mapTo(this) { ProductItem.Section.Repository(it.id, it.name) }
         }
     }.catch { it.printStackTrace() }

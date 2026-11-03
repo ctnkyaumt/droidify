@@ -14,6 +14,7 @@ import com.looker.droidify.data.local.model.AppEntity
 import com.looker.droidify.data.local.model.AuthorEntity
 import com.looker.droidify.data.local.model.CategoryAppRelation
 import com.looker.droidify.data.local.model.CategoryEntity
+import com.looker.droidify.utility.CategoryLocalization
 import com.looker.droidify.data.local.model.CategoryRepoRelation
 import com.looker.droidify.data.local.model.DonateEntity
 import com.looker.droidify.data.local.model.GraphicEntity
@@ -322,7 +323,12 @@ interface IndexDao {
             category.categoryEntity(defaultName)
         }
         val categoryRepoRelations = categories.map { CategoryRepoRelation(repoId, it.defaultName) }
-        if (categories.isNotEmpty()) insertCategories(categories)
+        if (categories.isNotEmpty()) {
+            insertCategories(categories)
+            categories.forEach {
+                CategoryLocalization.register(it.defaultName, it.locale, it.name)
+            }
+        }
         if (categoryRepoRelations.isNotEmpty()) insertCategoryRepoRelation(categoryRepoRelations)
 
         val mirrors = index.repo.mirrors.map { it.mirrorEntity(repoId) }

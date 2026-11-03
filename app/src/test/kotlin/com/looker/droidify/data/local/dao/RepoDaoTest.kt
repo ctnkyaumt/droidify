@@ -1,6 +1,7 @@
 package com.looker.droidify.data.local.dao
 
 import com.looker.droidify.data.local.BaseDatabaseTest
+import com.looker.droidify.data.local.model.CategoryEntity
 import com.looker.droidify.data.local.model.RepoEntity
 import com.looker.droidify.data.model.Fingerprint
 import kotlinx.coroutines.flow.first
@@ -96,5 +97,17 @@ class RepoDaoTest : BaseDatabaseTest() {
         assertEquals(2, result.size)
         assertEquals("https://repo1.org", result[id1])
         assertEquals("https://repo2.org", result[id2])
+    }
+
+    @Test
+    fun allCategoriesReturnsAllLocalizedCategories() = runDbTest {
+        val testCategories = listOf(
+            CategoryEntity(icon = null, name = "Internet", description = null, locale = "en-US", defaultName = "Internet"),
+            CategoryEntity(icon = null, name = "网络", description = null, locale = "zh-CN", defaultName = "Internet"),
+        )
+        indexDao.insertCategories(testCategories)
+
+        val result = repoDao.allCategories().first()
+        assertEquals(2, result.size)
     }
 }

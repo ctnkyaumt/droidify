@@ -66,6 +66,7 @@ import coil3.compose.AsyncImage
 import com.looker.droidify.R
 import com.looker.droidify.data.model.AppMinimal
 import com.looker.droidify.sync.v2.model.DefaultName
+import com.looker.droidify.utility.CategoryLocalization
 
 @Composable
 fun AppListScreen(
@@ -251,7 +252,7 @@ private fun CategoryChip(
     FilterChip(
         selected = selected,
         onClick = onToggle,
-        label = { Text(category) },
+        label = { Text(CategoryLocalization.getLocalizedName(category)) },
     )
 }
 

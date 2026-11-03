@@ -24,7 +24,18 @@ data class ProductItem(
         data object All : Section
 
         @Parcelize
-        data class Category(val name: String) : Section
+        data class Category(
+            val name: String,
+            val localizedName: String = name,
+        ) : Section {
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (other !is Category) return false
+                return name == other.name
+            }
+
+            override fun hashCode(): Int = name.hashCode()
+        }
 
         @Parcelize
         data class Repository(val id: Long, val name: String) : Section
