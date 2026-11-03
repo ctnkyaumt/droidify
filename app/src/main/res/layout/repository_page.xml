@@ -30,6 +30,11 @@
         layout="@layout/title_text_item" />
 
     <include
+        android:id="@+id/sync_error"
+        layout="@layout/title_text_item"
+        android:visibility="gone" />
+
+    <include
         android:id="@+id/recently_updated"
         layout="@layout/title_text_item" />
 

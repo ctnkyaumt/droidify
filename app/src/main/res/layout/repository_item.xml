@@ -42,6 +42,19 @@
             android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
             android:textColor="?colorOutline"
             tools:text="This is a repository of apps to be used with your F-Droid client. Applications in this repository are official binaries built by the original application developers, taken from their resp. repositories (mostly Github, GitLab, Codeberg). Updates for the apps are usually fetched daily, and you can expect daily index updates." />
+
+        <TextView
+            android:id="@+id/repository_error"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+            android:textColor="?colorError"
+            android:visibility="gone"
+            tools:text="Network error"
+            tools:visibility="visible" />
     </LinearLayout>
 
     <com.google.android.material.imageview.ShapeableImageView

@@ -12,6 +12,7 @@ import com.looker.droidify.R
 import com.looker.droidify.database.Database
 import com.looker.droidify.databinding.RepositoryItemBinding
 import com.looker.droidify.model.Repository
+import com.looker.droidify.utility.RepoSyncErrorManager
 import com.looker.droidify.utility.common.extension.authentication
 import com.looker.droidify.widget.CursorRecyclerAdapter
 
@@ -27,6 +28,7 @@ class RepositoriesAdapter(
         val repoName = itemView.repositoryName
         val repoDesc = itemView.repositoryDescription
         val repoState = itemView.repositoryState
+        val repoError = itemView.repositoryError
 
         var isChecked = false
     }
@@ -70,6 +72,14 @@ class RepositoriesAdapter(
 
         holder.repoName.text = repository.name
         holder.repoDesc.text = repository.description.trim()
+
+        val syncError = RepoSyncErrorManager.getError(holder.itemView.context, repository.id)
+        if (!syncError.isNullOrBlank()) {
+            holder.repoError.text = syncError
+            holder.repoError.visibility = View.VISIBLE
+        } else {
+            holder.repoError.visibility = View.GONE
+        }
 
         val colorOnSurface = MaterialColors.getColor(
             holder.itemView,

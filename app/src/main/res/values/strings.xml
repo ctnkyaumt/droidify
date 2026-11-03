@@ -221,6 +221,7 @@
     <string name="copied_to_clipboard">Copied</string>
     <string name="sync_repositories_automatically">Sync repositories automatically</string>
     <string name="auto_sync_interval">Auto-sync interval</string>
+    <string name="sync_error">Sync error</string>
     <string name="syncing">Syncing</string>
     <string name="syncing_FORMAT">Syncing %s…</string>
     <string name="system">System</string>

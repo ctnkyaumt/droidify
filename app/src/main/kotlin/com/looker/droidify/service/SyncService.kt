@@ -36,6 +36,7 @@ import com.looker.droidify.utility.common.extension.startForegroundSafe
 import com.looker.droidify.utility.common.extension.startServiceCompat
 import com.looker.droidify.utility.common.extension.stopForegroundCompat
 import com.looker.droidify.utility.common.result.Result
+import com.looker.droidify.utility.RepoSyncErrorManager
 import com.looker.droidify.utility.extension.startUpdate
 import com.looker.droidify.utility.notifications.updatesAvailableNotification
 import com.looker.droidify.work.RBLogWorker
@@ -259,6 +260,7 @@ class SyncService : ConnectionService<SyncService.Binder>() {
             val repository = Database.RepositoryAdapter.get(repositoryId)
             return repository != null && run {
                 setEnabled(repository, false)
+                RepoSyncErrorManager.clearError(this@SyncService, repository.id)
                 Database.RepositoryAdapter.markAsDeleted(repository.id)
                 true
             }
@@ -604,10 +606,17 @@ class SyncService : ConnectionService<SyncService.Binder>() {
                         it.printStackTrace()
                         if (task.manual) showNotificationError(repository, it as Exception)
                     }
+                    val errorMsg = RepoSyncErrorManager.formatError(this@SyncService, response.exception)
+                    RepoSyncErrorManager.setError(this@SyncService, repository.id, errorMsg)
+                    Database.notifyChanged(Database.Subject.Repositories)
                     response.data == true || isIndexModified
                 }
 
-                is Result.Success -> response.data || isIndexModified
+                is Result.Success -> {
+                    RepoSyncErrorManager.clearError(this@SyncService, repository.id)
+                    Database.notifyChanged(Database.Subject.Repositories)
+                    response.data || isIndexModified
+                }
             }
         } finally {
             withContext(NonCancellable) {
