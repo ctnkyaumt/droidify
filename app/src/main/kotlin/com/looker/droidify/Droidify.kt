@@ -32,6 +32,7 @@ import com.looker.droidify.network.Downloader
 import com.looker.droidify.receivers.InstalledAppReceiver
 import com.looker.droidify.service.FailedUpdateTracker
 import com.looker.droidify.service.SyncService
+import com.looker.droidify.utility.DateFormatter
 import com.looker.droidify.utility.NotificationIconHelper
 import com.looker.droidify.utility.common.cache.Cache
 import com.looker.droidify.utility.common.extension.getDrawableCompat
@@ -129,6 +130,11 @@ class Droidify : Application(), SingletonImageLoader.Factory, Configuration.Prov
             launch {
                 settingsRepository.get { alternativeNotificationIcon }.collect {
                     NotificationIconHelper.setAlternative(applicationContext, it)
+                }
+            }
+            launch {
+                settingsRepository.get { isoDateFormat }.collect {
+                    DateFormatter.useIso8601 = it
                 }
             }
             launch {

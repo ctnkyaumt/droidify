@@ -57,6 +57,7 @@ class PreferenceSettingsRepositoryTest {
         assertEquals(AutoSync.WIFI_ONLY, settings.autoSync)
         assertEquals(SortOrder.UPDATED, settings.sortOrder)
         assertFalse(settings.dynamicTheme)
+        assertFalse(settings.isoDateFormat)
     }
 
     @Test
@@ -135,6 +136,13 @@ class PreferenceSettingsRepositoryTest {
         repository.setStartupTab(StartupTab.UPDATES)
         val settings = repository.getInitial()
         assertEquals(StartupTab.UPDATES, settings.startupTab)
+    }
+
+    @Test
+    fun `setIsoDateFormat updates iso date format setting`() = runTest {
+        repository.setIsoDateFormat(true)
+        val settings = repository.getInitial()
+        assertTrue(settings.isoDateFormat)
     }
 
 

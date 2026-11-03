@@ -27,6 +27,7 @@ import com.looker.droidify.ui.MessageDialog
 import com.looker.droidify.ui.ScreenFragment
 import com.looker.droidify.utility.common.extension.getColorFromAttr
 import com.looker.droidify.utility.common.extension.systemBarsPadding
+import com.looker.droidify.utility.DateFormatter
 import com.looker.droidify.utility.RepoSyncErrorManager
 import com.looker.droidify.utility.extension.mainActivity
 import dagger.hilt.android.AndroidEntryPoint
@@ -144,14 +145,7 @@ class RepositoryFragment() : ScreenFragment() {
                 recentlyUpdated.text.text = run {
                     val lastUpdated = repository.updated
                     if (lastUpdated > 0L) {
-                        val date = Date(repository.updated)
-                        val format =
-                            if (DateUtils.isToday(date.time)) {
-                                DateUtils.FORMAT_SHOW_TIME
-                            } else {
-                                DateUtils.FORMAT_SHOW_TIME or DateUtils.FORMAT_SHOW_DATE
-                            }
-                        DateUtils.formatDateTime(requireContext(), date.time, format)
+                        DateFormatter.formatRepoDate(requireContext(), lastUpdated)
                     } else {
                         getString(stringRes.unknown)
                     }

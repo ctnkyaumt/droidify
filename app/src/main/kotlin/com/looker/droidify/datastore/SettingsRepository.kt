@@ -54,6 +54,8 @@ interface SettingsRepository {
 
     suspend fun setStartupTab(tab: StartupTab)
 
+    suspend fun setIsoDateFormat(enable: Boolean)
+
     suspend fun setProxyType(proxyType: ProxyType)
 
     suspend fun setProxyHost(proxyHost: String)

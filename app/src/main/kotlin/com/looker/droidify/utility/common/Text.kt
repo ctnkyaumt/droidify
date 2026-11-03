@@ -1,6 +1,7 @@
 package com.looker.droidify.utility.common
 
 import android.util.Log
+import com.looker.droidify.utility.DateFormatter
 import java.text.DateFormat
 import java.util.Date
 import java.util.TimeZone
@@ -19,7 +20,5 @@ fun Any.log(
     Log.println(type, tag, message.toString())
 }
 
-fun formatDate(millis: Long): String = DateFormat
-    .getDateInstance(DateFormat.SHORT)
-    .apply { timeZone = UTC }
-    .format(Date(millis))
+fun formatDate(millis: Long): String = DateFormatter.formatDate(millis)
+

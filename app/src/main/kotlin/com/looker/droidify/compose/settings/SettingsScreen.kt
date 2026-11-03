@@ -208,6 +208,15 @@ fun SettingsScreen(
                 )
             }
 
+            item(key = "setting_iso_date_format") {
+                SwitchSettingItem(
+                    title = stringResource(R.string.iso_date_format),
+                    description = stringResource(R.string.iso_date_format_summary),
+                    checked = settings.isoDateFormat,
+                    onCheckedChange = viewModel::setIsoDateFormat,
+                )
+            }
+
             item(key = "header_updates") { SettingHeader(title = stringResource(R.string.updates)) }
 
             item(key = "setting_auto_update") {

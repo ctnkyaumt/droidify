@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.looker.droidify.R
+import com.looker.droidify.utility.DateFormatter
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -33,7 +34,7 @@ fun LastUpdatedCard(
     timestamp: Long?,
     modifier: Modifier = Modifier,
 ) {
-    val lastUpdated = remember(timestamp) {
+    val lastUpdated = remember(timestamp, DateFormatter.useIso8601) {
         buildAnnotatedString {
             append("Last updated: ")
             withStyle(SpanStyle(fontFamily = FontFamily.Monospace)) {
@@ -94,6 +95,9 @@ fun LastUpdatedCard(
 fun isToday(timestamp: Long): Boolean = DateUtils.isToday(timestamp)
 
 private fun formatDate(timestamp: Long): String {
+    if (DateFormatter.useIso8601) {
+        return DateFormatter.formatDate(timestamp)
+    }
     val date = Date(timestamp)
     val pattern = if (isToday(timestamp)) "HH:mm" else "yyyy-MM-dd HH:mm"
     return SimpleDateFormat(pattern, Locale.getDefault()).format(date)

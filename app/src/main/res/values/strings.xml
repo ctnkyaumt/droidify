@@ -231,6 +231,8 @@
     <string name="tap_to_resume_updates">Open the app to resume updates</string>
     <string name="background_updates_restricted_DESC">Background updates were blocked by the system. Tap to open Updates.</string>
     <string name="startup_tab">Startup tab</string>
+    <string name="iso_date_format">ISO 8601 date format</string>
+    <string name="iso_date_format_summary">Display dates as yyyy-MM-dd instead of locale format</string>
     <string name="theme">Theme</string>
     <string name="themes">Themes</string>
     <string name="tracks_or_reports_your_activity">Tracks or reports your activity</string>

@@ -99,6 +99,12 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun setIsoDateFormat(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setIsoDateFormat(enabled)
+        }
+    }
+
     fun setStartupTab(tab: StartupTab) {
         viewModelScope.launch {
             settingsRepository.setStartupTab(tab)

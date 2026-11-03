@@ -41,6 +41,7 @@ data class Settings(
     val autoSyncInterval: Duration = 12.hours,
     val sortOrder: SortOrder = SortOrder.UPDATED,
     val startupTab: StartupTab = StartupTab.AVAILABLE,
+    val isoDateFormat: Boolean = false,
     val proxy: ProxyPreference = ProxyPreference(),
     val cleanUpInterval: Duration = 12.hours,
     @Contextual
