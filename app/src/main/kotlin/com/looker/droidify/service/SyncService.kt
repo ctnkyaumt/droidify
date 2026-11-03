@@ -614,6 +614,10 @@ class SyncService : ConnectionService<SyncService.Binder>() {
                 }
 
                 is Result.Success -> {
+                    notificationManager?.cancel(
+                        "repository-${repository.id}",
+                        Constants.NOTIFICATION_ID_SYNCING,
+                    )
                     RepoSyncErrorManager.clearError(this@SyncService, repository.id)
                     Database.notifyChanged(Database.Subject.Repositories)
                     response.data || isIndexModified
