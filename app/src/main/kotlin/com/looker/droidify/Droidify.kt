@@ -83,13 +83,13 @@ class Droidify : Application(), SingletonImageLoader.Factory, Configuration.Prov
     }
 
     private fun listenApplications() {
-        val installedItems = packageManager
-            .getInstalledPackagesCompat()
-            ?.map { it.toInstalledItem() }
-        if (installedItems != null) {
-            Database.InstalledAdapter.putAll(installedItems)
-        }
-        appScope.launch {
+        appScope.launch(Dispatchers.IO) {
+            val installedItems = packageManager
+                .getInstalledPackagesCompat()
+                ?.map { it.toInstalledItem() }
+            if (installedItems != null) {
+                Database.InstalledAdapter.putAll(installedItems)
+            }
             registerReceiver(
                 InstalledAppReceiver(packageManager),
                 IntentFilter().apply {
