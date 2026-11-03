@@ -51,6 +51,8 @@ internal class OkHttpDownloader(
             delay(retryPolicy.backoffDelay(attempt))
             attempt++
         }
+        @Suppress("UNREACHABLE_CODE")
+        error("Unreachable")
     }
 
     private suspend fun executeDownload(
