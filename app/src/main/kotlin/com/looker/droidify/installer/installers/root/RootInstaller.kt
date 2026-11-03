@@ -33,8 +33,7 @@ class RootInstaller(private val context: Context) : Installer {
             val result = if (shellResult.isSuccess) {
                 InstallState.Installed
             } else {
-                val out = shellResult.out.joinToString("
-")
+                val out = shellResult.out.joinToString("\n")
                 val errorDesc = when {
                     out.contains("INSTALL_FAILED_INSUFFICIENT_STORAGE", ignoreCase = true) ->
                         context.getString(R.string.insufficient_storage_DESC)

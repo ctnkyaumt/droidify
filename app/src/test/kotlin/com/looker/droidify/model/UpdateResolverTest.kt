@@ -118,7 +118,14 @@ class UpdateResolverTest {
 
         assertFalse(UpdateResolver.isSignatureCompatible(installed.signatures, release.signature))
         val suggested = UpdateResolver.findSuggestedRelease(listOf(release), installed)
-        assertNull(suggested, "Incompatible signature should not be suggested")
-        assertFalse(UpdateResolver.canUpdate(installed, listOf(release)))
+        assertNotNull(suggested, "Candidate release is returned for detail view")
+        assertFalse(
+            UpdateResolver.isSignatureCompatible(installed.signatures, suggested.signature),
+            "Suggested release should not be signature compatible",
+        )
+        assertFalse(
+            UpdateResolver.canUpdate(installed, listOf(release)),
+            "Incompatible signature must not be offered as an update",
+        )
     }
 }
