@@ -12,6 +12,7 @@
     <string name="always">Always</string>
     <string name="amoled">Black</string>
     <string name="anti_features">Anti-features</string>
+    <string name="anti_features_source_FORMAT">Anti-feature info from %s</string>
     <string name="application">App</string>
     <string name="application_not_found">App wasn\'t found</string>
     <string name="author_email">Author email</string>

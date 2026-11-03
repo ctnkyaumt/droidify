@@ -883,8 +883,9 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
             }
         }
 
+        val antiFeatureReasons = productRepository.first.antiFeatureReasons
         val antiFeatures = productRepository.first.antiFeatures.map {
-            when (it) {
+            val label = when (it) {
                 "Ads" -> context.getString(stringRes.has_advertising)
                 "ApplicationDebuggable" -> context.getString(stringRes.compiled_for_debugging)
                 "DisabledAlgorithm" -> context.getString(stringRes.signed_using_unsafe_algorithm)
@@ -903,10 +904,23 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
                 "TetheredNet" -> context.getString(stringRes.has_tethered_network)
                 else -> context.getString(stringRes.unknown_FORMAT, it)
             }
+            val reason = antiFeatureReasons[it]
+            if (reason.isNullOrBlank()) label else "$label: $reason"
         }.joinToString(separator = "\n") { "\u2022 $it" }
         if (antiFeatures.isNotEmpty()) {
+            val antiFeaturesText = buildString {
+                append(antiFeatures)
+                appendLine()
+                appendLine()
+                append(
+                    context.getString(
+                        stringRes.anti_features_source_FORMAT,
+                        productRepository.second.name,
+                    ),
+                )
+            }
             items += Item.SectionItem(SectionType.ANTI_FEATURES)
-            items += Item.TextItem(TextType.ANTI_FEATURES, antiFeatures)
+            items += Item.TextItem(TextType.ANTI_FEATURES, antiFeaturesText)
         }
 
         val changes = productRepository.first.whatsNew

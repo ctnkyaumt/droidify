@@ -23,6 +23,8 @@ data class Product(
     val donates: List<Donate>,
     val screenshots: List<Screenshot>,
     val releases: List<Release>,
+    // Anti-feature name to reason, only when the index provides one
+    val antiFeatureReasons: Map<String, String> = emptyMap(),
 ) {
     data class Author(val name: String, val email: String, val web: String)
 
