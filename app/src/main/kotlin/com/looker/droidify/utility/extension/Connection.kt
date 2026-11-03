@@ -15,10 +15,11 @@ fun Connection<DownloadService.Binder, DownloadService>.startUpdate(
     installedItem: InstalledItem?,
     products: List<Pair<Product, Repository>>,
     isAutoUpdate: Boolean = false,
+    preferredRepositoryId: Long = 0L,
 ) {
     if (binder == null || products.isEmpty()) return
 
-    val (product, repository) = products.findSuggested(installedItem) ?: return
+    val (product, repository) = products.findSuggested(installedItem, preferredRepositoryId) ?: return
 
     val selectedRelease = UpdateResolver.findSuggestedRelease(
         releases = product.releases,
