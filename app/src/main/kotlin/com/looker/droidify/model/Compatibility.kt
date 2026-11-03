@@ -6,9 +6,9 @@ object Compatibility {
         "android.hardware.gamepad",
     )
 
+    // Only documented platform limits; later releases keep the last known one
     fun minInstallableTargetSdk(deviceSdk: Int): Int = when {
-        deviceSdk >= 36 -> 25
-        deviceSdk == 35 -> 24
+        deviceSdk >= 35 -> 24
         deviceSdk == 34 -> 23
         else -> 0
     }

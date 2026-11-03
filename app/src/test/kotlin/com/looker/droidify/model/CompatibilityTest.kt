@@ -48,8 +48,8 @@ class CompatibilityTest {
         assertEquals(0, Compatibility.minInstallableTargetSdk(33))
         assertEquals(23, Compatibility.minInstallableTargetSdk(34))
         assertEquals(24, Compatibility.minInstallableTargetSdk(35))
-        assertEquals(25, Compatibility.minInstallableTargetSdk(36))
-        assertEquals(25, Compatibility.minInstallableTargetSdk(37))
+        assertEquals(24, Compatibility.minInstallableTargetSdk(36))
+        assertEquals(24, Compatibility.minInstallableTargetSdk(37))
     }
 
     @Test
@@ -69,9 +69,9 @@ class CompatibilityTest {
         assertFalse(Compatibility.isTargetSdkIncompatible(24, 35))
         assertFalse(Compatibility.isTargetSdkIncompatible(25, 35))
 
-        // Android 16 (API 36): min targetSdk is 25
-        assertTrue(Compatibility.isTargetSdkIncompatible(24, 36))
-        assertFalse(Compatibility.isTargetSdkIncompatible(25, 36))
+        // Android 16 (API 36): min targetSdk is still 24
+        assertTrue(Compatibility.isTargetSdkIncompatible(23, 36))
+        assertFalse(Compatibility.isTargetSdkIncompatible(24, 36))
 
         // Unspecified targetSdk (0) is never marked incompatible
         assertFalse(Compatibility.isTargetSdkIncompatible(0, 34))
