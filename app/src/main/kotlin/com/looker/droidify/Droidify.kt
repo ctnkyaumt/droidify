@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Intent
 import android.content.IntentFilter
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import androidx.work.WorkManager
@@ -114,8 +115,12 @@ class Droidify : Application(), SingletonImageLoader.Factory, Configuration.Prov
         appScope.launch {
             val lastSetLanguage = settingsRepository.getInitial().language
             val systemSetLanguage = AppCompatDelegate.getApplicationLocales().toLanguageTags()
-            if (systemSetLanguage != lastSetLanguage && lastSetLanguage != "system") {
-                settingsRepository.setLanguage(systemSetLanguage)
+            if (systemSetLanguage.isNotEmpty()) {
+                if (systemSetLanguage != lastSetLanguage) {
+                    settingsRepository.setLanguage(systemSetLanguage)
+                }
+            } else if (lastSetLanguage != "system" && lastSetLanguage.isNotEmpty()) {
+                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lastSetLanguage))
             }
         }
     }

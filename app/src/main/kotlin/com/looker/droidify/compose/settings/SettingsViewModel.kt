@@ -75,7 +75,11 @@ class SettingsViewModel @Inject constructor(
 
     fun setLanguage(language: String) {
         viewModelScope.launch {
-            val appLocale = LocaleListCompat.create(Locale.forLanguageTag(language))
+            val appLocale = if (language == "system" || language.isEmpty()) {
+                LocaleListCompat.getEmptyLocaleList()
+            } else {
+                LocaleListCompat.forLanguageTags(language)
+            }
             AppCompatDelegate.setApplicationLocales(appLocale)
             settingsRepository.setLanguage(language)
         }
@@ -102,6 +106,12 @@ class SettingsViewModel @Inject constructor(
     fun setIsoDateFormat(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setIsoDateFormat(enabled)
+        }
+    }
+
+    fun setHideSystemApps(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setHideSystemApps(enabled)
         }
     }
 
