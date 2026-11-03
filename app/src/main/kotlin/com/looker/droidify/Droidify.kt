@@ -91,6 +91,15 @@ class Droidify : Application(), SingletonImageLoader.Factory, Configuration.Prov
     }
 
     private fun listenApplications() {
+        registerReceiver(
+            InstalledAppReceiver(packageManager),
+            IntentFilter().apply {
+                addAction(Intent.ACTION_PACKAGE_ADDED)
+                addAction(Intent.ACTION_PACKAGE_REMOVED)
+                addAction(Intent.ACTION_PACKAGE_FULLY_REMOVED)
+                addDataScheme("package")
+            },
+        )
         appScope.launch(Dispatchers.IO) {
             val installedItems = packageManager
                 .getInstalledPackagesCompat()
@@ -98,15 +107,6 @@ class Droidify : Application(), SingletonImageLoader.Factory, Configuration.Prov
             if (installedItems != null) {
                 Database.InstalledAdapter.putAll(installedItems)
             }
-            registerReceiver(
-                InstalledAppReceiver(packageManager),
-                IntentFilter().apply {
-                    addAction(Intent.ACTION_PACKAGE_ADDED)
-                    addAction(Intent.ACTION_PACKAGE_REMOVED)
-                    addAction(Intent.ACTION_PACKAGE_FULLY_REMOVED)
-                    addDataScheme("package")
-                },
-            )
         }
     }
 
