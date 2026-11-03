@@ -10,6 +10,7 @@ import com.looker.droidify.model.Repository
 import com.looker.droidify.network.Downloader
 import com.looker.droidify.network.NetworkResponse
 import com.looker.droidify.network.header.addIfNotBlank
+import com.looker.droidify.network.header.inRange
 import com.looker.droidify.sync.JsonParser
 import com.looker.droidify.utility.common.cache.Cache
 import com.looker.droidify.utility.common.result.Result
@@ -486,7 +487,7 @@ object GitHubRepositoryUpdater {
                 val response = downloader.downloadToFile(
                     url = asset.downloadUrl,
                     target = file,
-                    headers = { add("Range", "bytes=$offset-${offset + length - 1}") },
+                    headers = { inRange(offset, offset + length - 1) },
                 ) { read, _ ->
                     // Do not download whole APKs from servers ignoring the range
                     if (read.value > length) throw IOException("Range request not honored")
