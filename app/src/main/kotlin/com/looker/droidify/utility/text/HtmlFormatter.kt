@@ -22,9 +22,9 @@ import com.looker.droidify.data.model.Html
 fun Html.format(
     onUrlClick: ((String) -> Unit)? = null, // FIXME: Remove once legacy is removed
 ): SpannableStringBuilder {
-    if (isPlainText) return SpannableStringBuilder(toString())
-
-    val builder = run {
+    val builder = if (isPlainText) {
+        SpannableStringBuilder(toString())
+    } else {
         val builder = SpannableStringBuilder(toSpanned())
         val last = builder.indexOfLast { it != '\n' }
         val first = builder.indexOfFirst { it != '\n' }
@@ -63,15 +63,17 @@ fun Html.format(
         }
     }
 
-    val bulletSpans = builder
-        .getSpans(0, builder.length, BulletSpan::class.java)
-        .orEmpty()
-        .asSequence()
-        .map { it to builder.getSpanStart(it) }
-        .sortedByDescending { it.second }
-    for ((span, start) in bulletSpans) {
-        builder.removeSpan(span)
-        builder.insert(start, "\u2022 ")
+    if (!isPlainText) {
+        val bulletSpans = builder
+            .getSpans(0, builder.length, BulletSpan::class.java)
+            .orEmpty()
+            .asSequence()
+            .map { it to builder.getSpanStart(it) }
+            .sortedByDescending { it.second }
+        for ((span, start) in bulletSpans) {
+            builder.removeSpan(span)
+            builder.insert(start, "\u2022 ")
+        }
     }
     return builder
 }

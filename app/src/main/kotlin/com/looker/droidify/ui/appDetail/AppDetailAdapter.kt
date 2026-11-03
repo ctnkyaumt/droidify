@@ -534,10 +534,9 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
 
         init {
             with(itemView as TextView) {
-                setTextIsSelectable(true)
                 setTextSizeScaled(15)
                 16.dp.let { itemView.setPadding(it, it, it, it) }
-                movementMethod = LinkMovementMethod()
+                movementMethod = LinkMovementMethod.getInstance()
                 layoutParams = RecyclerView.LayoutParams(
                     RecyclerView.LayoutParams.MATCH_PARENT,
                     RecyclerView.LayoutParams.WRAP_CONTENT,
