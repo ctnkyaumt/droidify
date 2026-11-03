@@ -55,7 +55,7 @@ class RepositoryFragment() : ScreenFragment() {
         } else if (!isGranted) {
             Toast.makeText(
                 requireContext(),
-                R.string.local_network_permission_required,
+                stringRes.local_network_permission_required,
                 Toast.LENGTH_SHORT,
             ).show()
             binding.repoSwitch.isChecked = false

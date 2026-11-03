@@ -14,6 +14,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import com.looker.droidify.R
+import com.looker.droidify.model.Repository
 import com.looker.droidify.database.CursorOwner
 import com.looker.droidify.databinding.ScreenRepositoriesBinding
 import com.looker.droidify.service.Connection
