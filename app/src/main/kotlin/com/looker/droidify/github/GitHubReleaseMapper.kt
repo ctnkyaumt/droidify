@@ -86,6 +86,7 @@ object GitHubReleaseMapper {
         repo: GitHubRepoInfo,
         releases: List<GitHubRelease>,
         deviceAbis: List<String>,
+        icons: Map<String, String> = emptyMap(),
         probe: (GitHubAsset) -> ApkManifest?,
     ): List<Product> {
         val candidates = stableReleases(releases).flatMap { release ->
@@ -127,7 +128,7 @@ object GitHubReleaseMapper {
                 summary = repo.description.orEmpty(),
                 description = "",
                 whatsNew = packageCandidates.first().release.body.orEmpty().trim(),
-                icon = if (owner.isNotEmpty()) "https://github.com/$owner.png" else "",
+                icon = icons[packageName] ?: if (owner.isNotEmpty()) "https://github.com/$owner.png" else "",
                 metadataIcon = "",
                 author = Product.Author(
                     name = owner,

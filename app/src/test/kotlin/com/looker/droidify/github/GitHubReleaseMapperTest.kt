@@ -258,4 +258,41 @@ class GitHubReleaseMapperTest {
         assertEquals("sha256", releases[0].hashType)
         assertEquals("", releases[1].hash)
     }
+
+    @Test
+    fun `custom icon map overrides avatar fallback`() {
+        val tag = "v153.0.8010.37"
+        val input = releases(
+            release(
+                tag = tag,
+                publishedAt = "2026-11-01T15:12:20Z",
+                assets = listOf(
+                    asset(1, "arm64_ChromePublic.apk", tag),
+                ),
+            ),
+        )
+        val manifests = mapOf(
+            "arm64_ChromePublic.apk" to ApkManifest("org.cromite.cromite", 801003702, "153.0.8010.37", 29, 36),
+        )
+
+        val productsWithIcon = GitHubReleaseMapper.map(
+            repositoryId = 5,
+            repo = cromiteRepo,
+            releases = input,
+            deviceAbis = arm64Device,
+            icons = mapOf("org.cromite.cromite" to "file:///icons/5_org.cromite.cromite.png"),
+        ) { manifests[it.name] }
+
+        assertEquals("file:///icons/5_org.cromite.cromite.png", productsWithIcon.first().icon)
+
+        val productsWithoutIcon = GitHubReleaseMapper.map(
+            repositoryId = 5,
+            repo = cromiteRepo,
+            releases = input,
+            deviceAbis = arm64Device,
+            icons = emptyMap(),
+        ) { manifests[it.name] }
+
+        assertEquals("https://github.com/uazo.png", productsWithoutIcon.first().icon)
+    }
 }

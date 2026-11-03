@@ -28,6 +28,8 @@ data class ApkManifest(
     val minSdkVersion: Int,
     val targetSdkVersion: Int,
     val permissions: List<String> = emptyList(),
+    val iconResId: Int = 0,
+    val roundIconResId: Int = 0,
 )
 
 /**
@@ -37,7 +39,7 @@ data class ApkManifest(
  */
 object ApkManifestReader {
 
-    private const val MANIFEST_NAME = "AndroidManifest.xml"
+    const val MANIFEST_NAME = "AndroidManifest.xml"
 
     private const val EOCD_SIGNATURE = 0x06054b50L
     private const val EOCD_SIZE = 22
@@ -57,14 +59,27 @@ object ApkManifestReader {
     private const val METHOD_DEFLATED = 8
 
     private const val MAX_CENTRAL_DIRECTORY_SIZE = 32L * 1024 * 1024
-    private const val MAX_MANIFEST_SIZE = 8L * 1024 * 1024
+    const val MAX_MANIFEST_SIZE = 8L * 1024 * 1024
 
     // Slack read after the local header in the same request, local extra fields may differ
     // from the central directory ones
     private const val LOCAL_HEADER_SLACK = 512
 
+    data class ZipEntry(
+        val name: String,
+        val method: Int,
+        val compressedSize: Long,
+        val uncompressedSize: Long,
+        val localHeaderOffset: Long,
+        val nameLength: Int,
+        val extraLength: Int,
+    )
+
     suspend fun read(reader: RangeReader): ApkManifest {
-        val manifest = readManifestBytes(reader)
+        val cd = readCentralDirectory(reader)
+        val entry = findEntry(cd, MANIFEST_NAME)
+            ?: throw ApkProbeException("$MANIFEST_NAME not found in APK")
+        val manifest = readEntry(reader, entry, MAX_MANIFEST_SIZE)
         return try {
             AxmlManifestParser.parse(manifest)
         } catch (e: ApkProbeException) {
@@ -74,7 +89,7 @@ object ApkManifestReader {
         }
     }
 
-    private suspend fun readManifestBytes(reader: RangeReader): ByteArray {
+    suspend fun readCentralDirectory(reader: RangeReader): ByteArray {
         val size = reader.size
         if (size < EOCD_SIZE) throw ApkProbeException("File too small to be an APK")
 
@@ -115,26 +130,13 @@ object ApkManifestReader {
             throw ApkProbeException("Central directory too large: $cdSize")
         }
 
-        val centralDirectory = if (cdOffset >= tailOffset) {
+        return if (cdOffset >= tailOffset) {
             val start = (cdOffset - tailOffset).toInt()
             tail.copyOfRange(start, start + cdSize.toInt())
         } else {
             reader.readExactly(cdOffset, cdSize.toInt())
         }
-
-        val entry = findManifestEntry(centralDirectory)
-            ?: throw ApkProbeException("$MANIFEST_NAME not found in APK")
-        return readEntry(reader, entry)
     }
-
-    private class Entry(
-        val method: Int,
-        val compressedSize: Long,
-        val uncompressedSize: Long,
-        val localHeaderOffset: Long,
-        val nameLength: Int,
-        val extraLength: Int,
-    )
 
     private fun findEndOfCentralDirectory(tail: ByteArray): Int? {
         var position = tail.size - EOCD_SIZE
@@ -148,8 +150,8 @@ object ApkManifestReader {
         return null
     }
 
-    private fun findManifestEntry(cd: ByteArray): Entry? {
-        val manifestName = MANIFEST_NAME.toByteArray(Charsets.UTF_8)
+    fun findEntry(cd: ByteArray, name: String): ZipEntry? {
+        val targetName = name.toByteArray(Charsets.UTF_8)
         var position = 0
         while (position + CENTRAL_HEADER_SIZE <= cd.size) {
             if (cd.u32(position) != CENTRAL_HEADER_SIGNATURE) {
@@ -166,11 +168,7 @@ object ApkManifestReader {
             val next = nameStart + nameLength + extraLength + commentLength
             if (next > cd.size) throw ApkProbeException("Corrupted central directory")
 
-            if (nameLength == manifestName.size &&
-                cd.regionEquals(nameStart, manifestName)
-            ) {
-                // ZIP64 extended information: only the fields set to 0xFFFFFFFF are present,
-                // in this order
+            if (nameLength == targetName.size && cd.regionEquals(nameStart, targetName)) {
                 var extra = nameStart + nameLength
                 val extraEnd = extra + extraLength
                 while (extra + 4 <= extraEnd) {
@@ -194,7 +192,8 @@ object ApkManifestReader {
                     }
                     extra += 4 + dataSize
                 }
-                return Entry(
+                return ZipEntry(
+                    name = name,
                     method = method,
                     compressedSize = compressedSize,
                     uncompressedSize = uncompressedSize,
@@ -208,9 +207,13 @@ object ApkManifestReader {
         return null
     }
 
-    private suspend fun readEntry(reader: RangeReader, entry: Entry): ByteArray {
-        if (entry.compressedSize > MAX_MANIFEST_SIZE || entry.uncompressedSize > MAX_MANIFEST_SIZE) {
-            throw ApkProbeException("$MANIFEST_NAME too large")
+    suspend fun readEntry(
+        reader: RangeReader,
+        entry: ZipEntry,
+        maxUncompressedSize: Long,
+    ): ByteArray {
+        if (entry.compressedSize > maxUncompressedSize || entry.uncompressedSize > maxUncompressedSize) {
+            throw ApkProbeException("${entry.name} too large")
         }
         if (entry.localHeaderOffset < 0 || entry.localHeaderOffset >= reader.size) {
             throw ApkProbeException("Invalid local header offset")
@@ -232,12 +235,12 @@ object ApkManifestReader {
         }
         return when (entry.method) {
             METHOD_STORED -> compressed
-            METHOD_DEFLATED -> inflate(compressed, entry.uncompressedSize.toInt())
+            METHOD_DEFLATED -> inflate(compressed, entry.uncompressedSize.toInt(), entry.name)
             else -> throw ApkProbeException("Unsupported compression method ${entry.method}")
         }
     }
 
-    private fun inflate(data: ByteArray, size: Int): ByteArray {
+    fun inflate(data: ByteArray, size: Int, entryName: String = "entry"): ByteArray {
         val inflater = Inflater(true)
         try {
             // Raw inflate may need one extra dummy byte at the end of input
@@ -253,16 +256,16 @@ object ApkManifestReader {
                 }
                 count += inflated
             }
-            if (count != size) throw ApkProbeException("Truncated $MANIFEST_NAME")
+            if (count != size) throw ApkProbeException("Truncated $entryName")
             return output
         } catch (e: DataFormatException) {
-            throw ApkProbeException("Corrupted $MANIFEST_NAME", e)
+            throw ApkProbeException("Corrupted $entryName", e)
         } finally {
             inflater.end()
         }
     }
 
-    private suspend fun RangeReader.readExactly(offset: Long, length: Int): ByteArray {
+    suspend fun RangeReader.readExactly(offset: Long, length: Int): ByteArray {
         val bytes = read(offset, length)
         if (bytes.size != length) {
             throw ApkProbeException("Expected $length bytes at $offset, got ${bytes.size}")
@@ -270,7 +273,7 @@ object ApkManifestReader {
         return bytes
     }
 
-    private fun ByteArray.regionEquals(offset: Int, other: ByteArray): Boolean {
+    fun ByteArray.regionEquals(offset: Int, other: ByteArray): Boolean {
         if (offset + other.size > size) return false
         for (i in other.indices) {
             if (this[offset + i] != other[i]) return false
@@ -278,13 +281,13 @@ object ApkManifestReader {
         return true
     }
 
-    private fun ByteArray.u16(offset: Int): Int =
+    fun ByteArray.u16(offset: Int): Int =
         (this[offset].toInt() and 0xFF) or ((this[offset + 1].toInt() and 0xFF) shl 8)
 
-    private fun ByteArray.u32(offset: Int): Long =
+    fun ByteArray.u32(offset: Int): Long =
         (u16(offset).toLong() or (u16(offset + 2).toLong() shl 16)) and MASK_32
 
-    private fun ByteArray.u64(offset: Int): Long = u32(offset) or (u32(offset + 4) shl 32)
+    fun ByteArray.u64(offset: Int): Long = u32(offset) or (u32(offset + 4) shl 32)
 }
 
 /**
@@ -304,11 +307,13 @@ internal object AxmlManifestParser {
     private const val TYPE_FIRST_INT = 0x10
     private const val TYPE_LAST_INT = 0x1f
 
+    private const val ATTR_ICON = 0x01010002
     private const val ATTR_NAME = 0x01010003
+    private const val ATTR_MIN_SDK_VERSION = 0x0101020c
     private const val ATTR_VERSION_CODE = 0x0101021b
     private const val ATTR_VERSION_NAME = 0x0101021c
-    private const val ATTR_MIN_SDK_VERSION = 0x0101020c
     private const val ATTR_TARGET_SDK_VERSION = 0x01010270
+    private const val ATTR_ROUND_ICON = 0x0101052c
     private const val ATTR_VERSION_CODE_MAJOR = 0x01010576
 
     private const val NO_INDEX = -1
@@ -334,6 +339,8 @@ internal object AxmlManifestParser {
         var versionName: String? = null
         var minSdk = 0
         var targetSdk = 0
+        var iconResId = 0
+        var roundIconResId = 0
         val permissions = mutableListOf<String>()
 
         fun Attribute.matches(resourceId: Int, name: String): Boolean {
@@ -411,6 +418,14 @@ internal object AxmlManifestParser {
                             .firstOrNull { it.matches(ATTR_NAME, "name") }
                             ?.stringValue()
                         if (!permission.isNullOrBlank()) permissions.add(permission)
+                    } else if (depth == 2 && elementName == "application") {
+                        for (attribute in attributes) {
+                            if (attribute.matches(ATTR_ICON, "icon")) {
+                                iconResId = attribute.data
+                            } else if (attribute.matches(ATTR_ROUND_ICON, "roundIcon")) {
+                                roundIconResId = attribute.data
+                            }
+                        }
                     }
                 }
 
@@ -428,10 +443,12 @@ internal object AxmlManifestParser {
             minSdkVersion = minSdk,
             targetSdkVersion = if (targetSdk > 0) targetSdk else minSdk,
             permissions = permissions.distinct(),
+            iconResId = iconResId,
+            roundIconResId = roundIconResId,
         )
     }
 
-    private fun readStringPool(buffer: ByteBuffer, bytes: ByteArray, chunk: Int): List<String?> {
+    internal fun readStringPool(buffer: ByteBuffer, bytes: ByteArray, chunk: Int): List<String?> {
         val headerSize = buffer.u16(chunk + 2)
         val stringCount = buffer.getInt(chunk + 8)
         val flags = buffer.getInt(chunk + 16)

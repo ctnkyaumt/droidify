@@ -50,8 +50,8 @@ data class ProductItem(
     ): String? {
         if (packageName.isBlank()) return null
         if (icon.isBlank() && metadataIcon.isBlank()) return null
-        // GitHub sources use absolute icon urls
-        if (icon.startsWith("https://")) return icon
+        // GitHub sources use absolute icon urls (remote https:// or local file://)
+        if (icon.startsWith("https://") || icon.startsWith("file://") || icon.startsWith("file:/")) return icon
         if (repository.version < 11 && icon.isNotBlank()) {
             return "${repository.address}/icons/$icon"
         }
