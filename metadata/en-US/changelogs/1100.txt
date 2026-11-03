@@ -1,0 +1,14 @@
+New:
+- GitHub sources show the real app icon instead of the owner's avatar
+- Markdown in "Changes", translation link, "updated X ago", App info action on all screens
+- Tab counts, hide system apps, mark all installed as favourites, "all up to date" message
+- Reduce animations setting, Android per-app language, search.f-droid.org links
+- Apps whose targetSdk is too old for the device are marked incompatible; gamepad requirement is optional
+
+Fixed:
+- Update all continues after a failure and no longer gets stuck
+- Downloads retry and resume on unstable connections
+- No crash when root/Shizuku access is lost
+- Clickable links in descriptions, dates keep the chosen language, text cut with large fonts
+- Duplicate "installed" badges, apps missing from Updates, Calyx shown as testing
+- Background sync ran twice
