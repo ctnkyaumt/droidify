@@ -8,6 +8,7 @@ import android.app.job.JobService
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.view.ContextThemeWrapper
 import androidx.core.app.NotificationCompat
 import androidx.fragment.app.Fragment
@@ -677,15 +678,19 @@ class SyncService : ConnectionService<SyncService.Binder>() {
             }
             .filter { it.first != null && it.second != null }
             .forEach { (installItem, repo) ->
-                val productRepo = Database.ProductAdapter.get(installItem!!.packageName, null)
-                    .filter { it.repositoryId == repo!!.id }
-                    .map { it to repo!! }
-                downloadConnection.startUpdate(
-                    installItem.packageName,
-                    installItem,
-                    productRepo,
-                    isAutoUpdate = isAutoUpdate,
-                )
+                try {
+                    val productRepo = Database.ProductAdapter.get(installItem!!.packageName, null)
+                        .filter { it.repositoryId == repo!!.id }
+                        .map { it to repo!! }
+                    downloadConnection.startUpdate(
+                        installItem.packageName,
+                        installItem,
+                        productRepo,
+                        isAutoUpdate = isAutoUpdate,
+                    )
+                } catch (e: Exception) {
+                    Log.e("SyncService", "Failed to enqueue update for ${installItem?.packageName}", e)
+                }
             }
     }
 

@@ -53,6 +53,7 @@ import com.looker.droidify.data.local.model.Reproducible
 import com.looker.droidify.data.local.model.toReproducible
 import com.looker.droidify.datastore.model.CustomButton
 import com.looker.droidify.model.InstalledItem
+import com.looker.droidify.model.InstalledReleaseSelector
 import com.looker.droidify.model.Product
 import com.looker.droidify.model.ProductPreference
 import com.looker.droidify.model.Release
@@ -398,6 +399,7 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
             val selectedRepository: Boolean,
             val showSignature: Boolean,
             val reproducible: Reproducible,
+            val isInstalled: Boolean = false,
         ) : Item() {
             override val descriptor: String
                 get() = "release.${repository.id}.${release.identifier}"
@@ -1143,14 +1145,28 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
             .filter { (_, entry) -> entry.size >= 2 }
             .keys
 
-        val releaseItems = compatibleReleasePairs
+        val compatibleReleaseList = compatibleReleasePairs.toList()
+        val installedTarget = InstalledReleaseSelector.findInstalledRelease(
+            items = compatibleReleaseList,
+            installedItem = installedItem,
+            preferredRepositoryId = preferredRepositoryId,
+            selectedRepositoryId = productRepository.second.id,
+            releaseOf = { it.first },
+            repositoryIdOf = { it.second.id },
+        )
+
+        val releaseItems = compatibleReleaseList
             .map { (release, repository) ->
+                val isInstalled = installedTarget != null &&
+                    installedTarget.first.identifier == release.identifier &&
+                    installedTarget.second.id == repository.id
                 Item.ReleaseItem(
                     repository = repository,
                     release = release,
                     selectedRepository = repository.id == productRepository.second.id,
                     showSignature = release.versionCode in versionsWithMultiSignature,
                     reproducible = rblogs.find { it.hash == release.hash }.toReproducible(),
+                    isInstalled = isInstalled,
                 )
             }
             .sortedByDescending { it.release.versionCode }
@@ -1774,9 +1790,7 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
                 val incompatibility = item.release.incompatibilities.firstOrNull()
                 val singlePlatform =
                     if (item.release.platforms.size == 1) item.release.platforms.first() else null
-                val installed = installedItem?.versionCode == item.release.versionCode &&
-                    (item.release.signature.isEmpty() ||
-                        installedItem?.signature == item.release.signature)
+                val installed = item.isInstalled
                 val suggested =
                     incompatibility == null && item.release.selected && item.selectedRepository
 

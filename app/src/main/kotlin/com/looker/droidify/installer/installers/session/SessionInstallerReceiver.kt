@@ -1,5 +1,6 @@
 package com.looker.droidify.installer.installers.session
 
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -11,6 +12,7 @@ import com.looker.droidify.database.Database
 import com.looker.droidify.installer.InstallManager
 import com.looker.droidify.installer.model.InstallState
 import com.looker.droidify.utility.common.Constants.NOTIFICATION_CHANNEL_INSTALL
+import com.looker.droidify.utility.common.SdkCheck
 import com.looker.droidify.utility.common.createNotificationChannel
 import com.looker.droidify.utility.common.extension.getPackageName
 import com.looker.droidify.utility.common.extension.notificationManager
@@ -48,11 +50,36 @@ class SessionInstallerReceiver : BroadcastReceiver() {
             promptIntent.putExtra(Intent.EXTRA_INSTALLER_PACKAGE_NAME, "com.android.vending")
             promptIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
-            try {
+            val started = try {
                 context.startActivity(promptIntent)
+                true
             } catch (e: Exception) {
                 e.printStackTrace()
-                if (!isUninstall && sessionId != -1) SessionInstaller.abandon(sessionId)
+                false
+            }
+            // If background activity launch failed or was blocked by Android, post an interactive notification
+            if (!started) {
+                val packageName = intent.getStringExtra(PackageInstaller.EXTRA_PACKAGE_NAME)
+                if (packageName != null) {
+                    val appName = context.packageManager.getPackageName(packageName)
+                    val pendingPrompt = PendingIntent.getActivity(
+                        context,
+                        sessionId,
+                        promptIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or (if (SdkCheck.isSnowCake) PendingIntent.FLAG_MUTABLE else 0),
+                    )
+                    val notification = context.createInstallNotification(
+                        appName = (appName ?: packageName.substringAfterLast('.')).toString(),
+                        state = InstallState.Installing,
+                    ) {
+                        setContentText(context.getString(R.string.install))
+                        setContentIntent(pendingPrompt)
+                    }
+                    context.notificationManager?.installNotification(
+                        packageName = packageName,
+                        notification = notification,
+                    )
+                }
             }
         } else {
             notifyStatus(intent, context)

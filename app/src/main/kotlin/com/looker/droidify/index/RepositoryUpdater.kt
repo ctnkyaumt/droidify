@@ -484,6 +484,8 @@ object RepositoryUpdater {
         val firstSelected =
             releasePairs.firstOrNull { it.second.isEmpty() && predicate(it.first) }
                 ?: releasePairs.firstOrNull { predicate(it.first) }
+                ?: releasePairs.firstOrNull { it.second.isEmpty() }
+                ?: releasePairs.firstOrNull()
 
         val releases = releasePairs
             .map { (release, incompatibilities) ->

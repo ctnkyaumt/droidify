@@ -29,6 +29,7 @@ import com.looker.droidify.utility.notifications.removeInstallNotification
 import com.looker.droidify.utility.notifications.updatesAvailableNotification
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.coroutineScope
@@ -36,13 +37,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 class InstallManager(
     private val context: Context,
     private val settingsRepository: SettingsRepository,
 ) {
 
-    private val installItems = Channel<InstallItem>()
+    private val installItems = Channel<InstallItem>(Channel.UNLIMITED)
     private val uninstallItems = Channel<PackageName>()
 
     val state = MutableStateFlow<Map<PackageName, InstallState>>(emptyMap())
@@ -87,76 +89,104 @@ class InstallManager(
                 }
             }
         }.consumeEach { item ->
-            if (state.value.containsKey(item.packageName)) {
-                updateState { put(item.packageName, InstallState.Installing) }
-                notificationManager?.installNotification(
-                    packageName = item.packageName.name,
-                    notification = context.createInstallNotification(
-                        appName = item.packageName.name,
-                        state = InstallState.Installing,
-                    ),
-                )
-                val installer = currentInstaller()
-
-                val result = try {
-                    installer.install(item)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    Log.e(
-                        "InstallManager",
-                        "Install failed for ${item.packageName.name}",
-                        e,
-                    )
-                    val appName = (context.packageManager.getPackageName(item.packageName.name)
-                        ?: item.packageName.name.substringAfterLast('.')).toString()
-                    val notification = context.createInstallNotification(
-                        appName = appName,
-                        state = InstallState.Failed,
-                    ) {
-                        setContentText(context.getString(com.looker.droidify.R.string.unknown_error_DESC))
-                    }
+            try {
+                if (state.value.containsKey(item.packageName)) {
+                    updateState { put(item.packageName, InstallState.Installing) }
                     notificationManager?.installNotification(
                         packageName = item.packageName.name,
-                        notification = notification,
+                        notification = context.createInstallNotification(
+                            appName = item.packageName.name,
+                            state = InstallState.Installing,
+                        ),
                     )
-                    InstallState.Failed
-                }
-                if (result == InstallState.Installed) {
-                    FailedUpdateTracker.recordSuccess(item.packageName.name)
-                } else if (result == InstallState.Failed && item.versionCode > 0L) {
-                    FailedUpdateTracker.recordFailure(item.packageName.name, item.versionCode)
-                }
-                if (result == InstallState.Installed && installer !is LegacyInstaller) {
-                    if (deleteApkPreference.first()) {
-                        val apkFile = Cache.getReleaseFile(context, item.installFileName)
-                        if (apkFile.exists()) {
-                            apkFile.delete()
-                        }
+                    val installer = try {
+                        currentInstaller()
+                    } catch (e: Exception) {
+                        Log.e("InstallManager", "Failed to initialize installer", e)
+                        null
                     }
-                }
-                if (result == InstallState.Installed && SyncService.autoUpdating) {
-                    val updates = Database.ProductAdapter.getUpdates(skipSignature.first())
-                    when {
-                        updates.isEmpty() -> {
-                            SyncService.autoUpdating = false
-                            notificationManager?.cancel(Constants.NOTIFICATION_ID_UPDATES)
-                        }
-                        updates.map { it.packageName } != SyncService.autoUpdateStartedFor -> {
-                            notificationManager?.notify(
-                                Constants.NOTIFICATION_ID_UPDATES,
-                                updatesAvailableNotification(context, updates),
+
+                    val result = if (installer == null) {
+                        showFailedNotification(item, context.getString(com.looker.droidify.R.string.unknown_error_DESC))
+                        InstallState.Failed
+                    } else {
+                        try {
+                            withTimeout(INSTALL_TIMEOUT) {
+                                installer.install(item)
+                            }
+                        } catch (e: TimeoutCancellationException) {
+                            Log.e("InstallManager", "Install timed out for ${item.packageName.name}", e)
+                            showFailedNotification(item, context.getString(com.looker.droidify.R.string.install_timed_out))
+                            InstallState.Failed
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            Log.e(
+                                "InstallManager",
+                                "Install failed for ${item.packageName.name}",
+                                e,
                             )
+                            showFailedNotification(item, context.getString(com.looker.droidify.R.string.unknown_error_DESC))
+                            InstallState.Failed
                         }
                     }
+
+                    if (result == InstallState.Installed) {
+                        FailedUpdateTracker.recordSuccess(item.packageName.name)
+                    } else if (result == InstallState.Failed && item.versionCode > 0L) {
+                        FailedUpdateTracker.recordFailure(item.packageName.name, item.versionCode)
+                    }
+                    if (result == InstallState.Installed && installer !is LegacyInstaller) {
+                        if (deleteApkPreference.first()) {
+                            val apkFile = Cache.getReleaseFile(context, item.installFileName)
+                            if (apkFile.exists()) {
+                                apkFile.delete()
+                            }
+                        }
+                    }
+                    if (SyncService.autoUpdating) {
+                        val updates = Database.ProductAdapter.getUpdates(skipSignature.first())
+                        when {
+                            updates.isEmpty() -> {
+                                SyncService.autoUpdating = false
+                                notificationManager?.cancel(Constants.NOTIFICATION_ID_UPDATES)
+                            }
+                            updates.map { it.packageName } != SyncService.autoUpdateStartedFor -> {
+                                notificationManager?.notify(
+                                    Constants.NOTIFICATION_ID_UPDATES,
+                                    updatesAvailableNotification(context, updates),
+                                )
+                            }
+                        }
+                    }
+                    if (result != InstallState.Failed) {
+                        notificationManager?.removeInstallNotification(item.packageName.name)
+                    }
+                    updateState { put(item.packageName, result) }
                 }
-                if (result != InstallState.Failed) {
-                    notificationManager?.removeInstallNotification(item.packageName.name)
-                }
-                updateState { put(item.packageName, result) }
+            } finally {
                 currentQueue.remove(item.packageName.name)
             }
         }
+    }
+
+    private fun showFailedNotification(item: InstallItem, errorDesc: String) {
+        val appName = (context.packageManager.getPackageName(item.packageName.name)
+            ?: item.packageName.name.substringAfterLast('.')).toString()
+        val notification = context.createInstallNotification(
+            appName = appName,
+            state = InstallState.Failed,
+        ) {
+            setContentText(errorDesc)
+        }
+        notificationManager?.installNotification(
+            packageName = item.packageName.name,
+            notification = notification,
+        )
+    }
+
+    companion object {
+        private const val INSTALL_TIMEOUT = 180_000L
     }
 
     private fun CoroutineScope.uninstaller() = launch {

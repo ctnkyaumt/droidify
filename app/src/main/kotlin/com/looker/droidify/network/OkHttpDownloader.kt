@@ -8,6 +8,7 @@ import java.net.HttpURLConnection.HTTP_NOT_MODIFIED
 import java.net.SocketTimeoutException
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import okhttp3.Headers
 import okhttp3.OkHttpClient
@@ -17,10 +18,12 @@ import okio.BufferedSink
 import okio.BufferedSource
 import okio.appendingSink
 import okio.buffer
+import okio.sink
 
 internal class OkHttpDownloader(
     private val client: OkHttpClient,
     private val dispatcher: CoroutineDispatcher,
+    private val retryPolicy: DownloadRetryPolicy = DownloadRetryPolicy(),
 ) : Downloader {
 
     override suspend fun headCall(
@@ -39,6 +42,25 @@ internal class OkHttpDownloader(
         headers: Headers.Builder.() -> Unit,
         block: ProgressListener?,
     ): NetworkResponse = withContext(dispatcher) {
+        var attempt = 0
+        while (true) {
+            val response = executeDownload(url, target, headers, block)
+            if (response is NetworkResponse.Success || !retryPolicy.shouldRetry(response, attempt)) {
+                return@withContext response
+            }
+            delay(retryPolicy.backoffDelay(attempt))
+            attempt++
+        }
+        @Suppress("UNREACHABLE_CODE")
+        error("Unreachable")
+    }
+
+    private suspend fun executeDownload(
+        url: String,
+        target: File,
+        headers: Headers.Builder.() -> Unit,
+        block: ProgressListener?,
+    ): NetworkResponse = withContext(dispatcher) {
         try {
             val fileSize = target.length()
             val request = request(url) {
@@ -46,13 +68,26 @@ internal class OkHttpDownloader(
                 headers()
             }.build()
             client.newCall(request).execute().use { response ->
+                val code = response.code
+                if (code == 416) {
+                    target.delete()
+                    return@use NetworkResponse.Error.Http(416)
+                }
                 val networkResponse = response.asNetworkResponse()
                 if (networkResponse !is NetworkResponse.Success) return@use networkResponse
 
-                target.appendingSink().buffer().use { sink ->
+                val isPartial = code == 206
+                val sink = if (isPartial && fileSize > 0) {
+                    target.appendingSink().buffer()
+                } else {
+                    target.sink().buffer()
+                }
+                val alreadyRead = if (isPartial) fileSize else 0L
+
+                sink.use { bufferedSink ->
                     response.body.source().copyTo(
-                        sink = sink,
-                        alreadyRead = fileSize,
+                        sink = bufferedSink,
+                        alreadyRead = alreadyRead,
                         contentLength = response.body.contentLength().takeIf { it >= 0 },
                         block = block,
                     )
