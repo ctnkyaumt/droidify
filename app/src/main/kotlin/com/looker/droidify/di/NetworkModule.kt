@@ -63,7 +63,7 @@ object NetworkModule {
 
 class AppProxySelector(
     settingsRepository: SettingsRepository,
-    private val defaultSelector: ProxySelector = ProxySelector.getDefault() ?: ProxySelector.of(null),
+    private val defaultSelector: ProxySelector? = ProxySelector.getDefault(),
 ) : ProxySelector() {
 
     @Volatile
@@ -84,12 +84,12 @@ class AppProxySelector(
         return if (customProxy != null) {
             listOf(customProxy)
         } else {
-            defaultSelector.select(uri)
+            defaultSelector?.select(uri) ?: listOf(Proxy.NO_PROXY)
         }
     }
 
     override fun connectFailed(uri: URI?, sa: SocketAddress?, ioe: IOException?) {
-        defaultSelector.connectFailed(uri, sa, ioe)
+        defaultSelector?.connectFailed(uri, sa, ioe)
     }
 }
 
