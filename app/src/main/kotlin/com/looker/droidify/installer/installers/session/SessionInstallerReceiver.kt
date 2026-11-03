@@ -91,12 +91,21 @@ class SessionInstallerReceiver : BroadcastReceiver() {
 
                 else -> {
                     installManager.remove(packageName.toPackageName())
+                    val errorDesc = when (status) {
+                        PackageInstaller.STATUS_FAILURE_STORAGE ->
+                            context.getString(R.string.insufficient_storage_DESC)
+                        PackageInstaller.STATUS_FAILURE_INCOMPATIBLE,
+                        PackageInstaller.STATUS_FAILURE_CONFLICT ->
+                            context.getString(R.string.incompatible_signature_DESC)
+                        else -> message ?: context.getString(R.string.unknown_error_DESC)
+                    }
+                    val displayName = (appName ?: packageName.substringAfterLast('.')).toString()
                     val notification = context.createInstallNotification(
-                        appName = appName.toString(),
+                        appName = displayName,
                         state = InstallState.Failed,
                         isUninstall = isUninstall,
                     ) {
-                        setContentText(message)
+                        setContentText(errorDesc)
                     }
                     notificationManager?.installNotification(
                         packageName = packageName,

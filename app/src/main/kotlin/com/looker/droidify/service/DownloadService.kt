@@ -435,6 +435,15 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
         target: File,
     ) = launch {
         try {
+            if (Cache.getEmptySpace(this@DownloadService) < task.release.size) {
+                updateCurrentState(State.Error(task.packageName))
+                showErrorNotification(
+                    task,
+                    stringRes.insufficient_storage,
+                    getString(stringRes.insufficient_storage_DESC),
+                )
+                return@launch
+            }
             val response = downloader.downloadToFile(
                 url = task.url,
                 target = target,
