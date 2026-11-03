@@ -362,10 +362,11 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
                 .setColor(Color.GREEN)
                 .setAutoCancel(true)
                 .setContentTitle(getString(stringRes.updates))
-                .setContentText(getString(stringRes.tap_to_resume_updates))
+                .setContentText(getString(stringRes.background_updates_restricted_DESC))
                 .setContentIntent(
                     Intent(this, MainActivity::class.java)
-                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        .setAction(MainActivity.ACTION_UPDATES)
+                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                         .toPendingIntent(this),
                 )
                 .build(),
