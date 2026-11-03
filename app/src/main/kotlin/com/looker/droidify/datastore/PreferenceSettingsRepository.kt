@@ -20,6 +20,7 @@ import com.looker.droidify.datastore.model.ProxyType
 import com.looker.droidify.datastore.model.SortOrder
 import com.looker.droidify.datastore.model.StartupTab
 import com.looker.droidify.datastore.model.Theme
+import com.looker.droidify.utility.AnimationHelper
 import com.looker.droidify.utility.DateFormatter
 import com.looker.droidify.utility.common.Exporter
 import com.looker.droidify.utility.common.extension.updateAsMutable
@@ -165,6 +166,9 @@ class PreferenceSettingsRepository(
     override suspend fun setHomeScreenSwiping(value: Boolean) =
         HOME_SCREEN_SWIPING.update(value)
 
+    override suspend fun setReduceAnimations(value: Boolean) =
+        REDUCE_ANIMATIONS.update(value)
+
     override suspend fun toggleFavourites(packageName: String) {
         dataStore.edit { preference ->
             val currentSet = preference[FAVOURITE_APPS] ?: emptySet()
@@ -249,6 +253,8 @@ class PreferenceSettingsRepository(
         val rbLogMirrorIndex = preferences[RB_MIRROR_INDEX] ?: 0
         val favouriteApps = preferences[FAVOURITE_APPS] ?: emptySet()
         val homeScreenSwiping = preferences[HOME_SCREEN_SWIPING] ?: true
+        val reduceAnimations = preferences[REDUCE_ANIMATIONS] ?: false
+        AnimationHelper.reduceAnimations = reduceAnimations
         val enabledRepoIds =
             preferences[ENABLED_REPO_IDS]?.mapNotNull { it.toIntOrNull() }?.toSet() ?: emptySet()
         val deleteApkOnInstall = preferences[DELETE_APK_ON_INSTALL] ?: false
@@ -278,6 +284,7 @@ class PreferenceSettingsRepository(
             rbLogMirrorIndex = rbLogMirrorIndex,
             favouriteApps = favouriteApps,
             homeScreenSwiping = homeScreenSwiping,
+            reduceAnimations = reduceAnimations,
             enabledRepoIds = enabledRepoIds,
             deleteApkOnInstall = deleteApkOnInstall,
             rbLogsEnabled = reproducibilityLogsEnabled,
@@ -308,6 +315,7 @@ class PreferenceSettingsRepository(
         val RB_MIRROR_INDEX = intPreferencesKey("key_rb_logs_mirror_index")
         val FAVOURITE_APPS = stringSetPreferencesKey("key_favourite_apps")
         val HOME_SCREEN_SWIPING = booleanPreferencesKey("key_home_swiping")
+        val REDUCE_ANIMATIONS = booleanPreferencesKey("key_reduce_animations")
         val DELETE_APK_ON_INSTALL = booleanPreferencesKey("key_delete_apk_on_install")
         val REPRODUCIBILITY_LOGS_ENABLED = booleanPreferencesKey("key_reproducibility_logs_enabled")
         val LEGACY_INSTALLER_COMPONENT_CLASS =
@@ -375,6 +383,7 @@ class PreferenceSettingsRepository(
             set(RB_MIRROR_INDEX, settings.rbLogMirrorIndex)
             set(FAVOURITE_APPS, settings.favouriteApps)
             set(HOME_SCREEN_SWIPING, settings.homeScreenSwiping)
+            set(REDUCE_ANIMATIONS, settings.reduceAnimations)
             set(ENABLED_REPO_IDS, settings.enabledRepoIds.map { it.toString() }.toSet())
             set(DELETE_APK_ON_INSTALL, settings.deleteApkOnInstall)
             set(REPRODUCIBILITY_LOGS_ENABLED, settings.rbLogsEnabled)

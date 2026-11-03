@@ -58,6 +58,7 @@ class PreferenceSettingsRepositoryTest {
         assertEquals(SortOrder.UPDATED, settings.sortOrder)
         assertFalse(settings.dynamicTheme)
         assertFalse(settings.isoDateFormat)
+        assertFalse(settings.reduceAnimations)
     }
 
     @Test
@@ -143,6 +144,13 @@ class PreferenceSettingsRepositoryTest {
         repository.setIsoDateFormat(true)
         val settings = repository.getInitial()
         assertTrue(settings.isoDateFormat)
+    }
+
+    @Test
+    fun `setReduceAnimations updates reduce animations setting`() = runTest {
+        repository.setReduceAnimations(true)
+        val settings = repository.getInitial()
+        assertTrue(settings.reduceAnimations)
     }
 
 

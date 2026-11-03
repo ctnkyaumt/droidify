@@ -217,6 +217,15 @@ fun SettingsScreen(
                 )
             }
 
+            item(key = "setting_reduce_animations") {
+                SwitchSettingItem(
+                    title = stringResource(R.string.reduce_animations_title),
+                    description = stringResource(R.string.reduce_animations_desc),
+                    checked = settings.reduceAnimations,
+                    onCheckedChange = viewModel::setReduceAnimations,
+                )
+            }
+
             item(key = "header_updates") { SettingHeader(title = stringResource(R.string.updates)) }
 
             item(key = "setting_auto_update") {
