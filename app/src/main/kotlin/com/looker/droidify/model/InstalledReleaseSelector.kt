@@ -27,9 +27,7 @@ object InstalledReleaseSelector {
         val candidates = items.filter { item ->
             val release = releaseOf(item)
             val matchesVersion = release.versionCode == installedItem.versionCode
-            val matchesSignature = release.signature.isBlank() ||
-                installedItem.signatures.isEmpty() ||
-                UpdateResolver.isSignatureCompatible(installedItem.signatures, release.signature)
+            val matchesSignature = UpdateResolver.isSignatureCompatible(installedItem.signatures, release.signature)
             matchesVersion && matchesSignature
         }
 

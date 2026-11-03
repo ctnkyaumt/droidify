@@ -659,8 +659,8 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
                 MessageDialog(Message.ReleaseOlder).show(childFragmentManager)
             }
 
-            installedItem != null && release.signature.isNotEmpty() &&
-                installedItem.signature != release.signature -> {
+            installedItem != null &&
+                !UpdateResolver.isSignatureCompatible(installedItem.signatures, release.signature) -> {
                 lifecycleScope.launch {
                     if (viewModel.shouldIgnoreSignature()) {
                         queueReleaseInstall(release, installedItem)
