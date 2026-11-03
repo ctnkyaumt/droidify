@@ -1,0 +1,13 @@
+First release of this Droid-ify fork (based on upstream 0.7.8).
+
+New:
+- GitHub Releases as a repository type: add any github.com/owner/repo; Cromite now comes from GitHub, QuaX added
+- Pull to refresh, sync interval setting, startup tab, ISO 8601 dates, alternative notification icon
+- Update all progress, preferred repository per app, personal notes, favourites sorting
+- Anti-feature reasons and source, sync errors in repository list, centred screenshots
+
+Fixed:
+- 23 upstream bugs, incl. update detection with rotated keys, Update all, local repos on Android 17, proxy support, stuck install state, new repositories not syncing
+
+Removed:
+- IzzyOnDroid download statistics and version from the User-Agent
