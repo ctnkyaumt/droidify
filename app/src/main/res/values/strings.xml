@@ -12,6 +12,7 @@
     <string name="always">Always</string>
     <string name="amoled">Black</string>
     <string name="anti_features">Anti-features</string>
+    <string name="anti_features_source_FORMAT">Anti-feature info from %s</string>
     <string name="application">App</string>
     <string name="application_not_found">App wasn\'t found</string>
     <string name="author_email">Author email</string>
@@ -254,6 +255,13 @@
     <string name="prefs_personalization">Personalization</string>
     <string name="show_less">Show less</string>
     <string name="update_all">Update all</string>
+    <string name="updating_all">Updating…</string>
+    <string name="updating_progress_FORMAT">Updating %1$d of %2$d</string>
+    <string name="preferred_repository">Preferred repository</string>
+    <string name="preferred_repository_automatic">Automatic (newest version)</string>
+    <string name="note">Note</string>
+    <string name="add_note">Add a note</string>
+    <string name="note_hint">Personal note about this app</string>
     <string name="contains_nsfw">Contains not safe for work (NSFW) content</string>
     <string name="label_open_video">Video</string>
     <string name="label_unknown_sdk">Unknown (%d)</string>

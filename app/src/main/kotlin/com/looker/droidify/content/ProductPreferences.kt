@@ -24,12 +24,23 @@ object ProductPreferences {
         extraBufferCapacity = Int.MAX_VALUE,
     )
     private val subject = mutableSubject.asSharedFlow()
+    private val mutablePreferredRepositorySubject = MutableSharedFlow<Pair<String, Long>>(
+        extraBufferCapacity = Int.MAX_VALUE,
+    )
 
     fun init(context: Context, scope: CoroutineScope) {
         preferences = context.getSharedPreferences("product_preferences", Context.MODE_PRIVATE)
+        val allPreferences = preferences.all.keys.map { packageName ->
+            Pair(packageName, this[packageName])
+        }
         Database.LockAdapter.putAll(
-            preferences.all.keys.mapNotNull { packageName ->
-                this[packageName].databaseVersionCode?.let { Pair(packageName, it) }
+            allPreferences.mapNotNull { (packageName, preference) ->
+                preference.databaseVersionCode?.let { Pair(packageName, it) }
+            },
+        )
+        Database.PreferredRepositoryAdapter.putAll(
+            allPreferences.mapNotNull { (packageName, preference) ->
+                preference.preferredRepositoryId.takeIf { it > 0L }?.let { Pair(packageName, it) }
             },
         )
         scope.launch {
@@ -38,6 +49,15 @@ object ProductPreferences {
                     Database.LockAdapter.put(Pair(packageName, versionCode))
                 } else {
                     Database.LockAdapter.delete(packageName)
+                }
+            }
+        }
+        scope.launch {
+            mutablePreferredRepositorySubject.collect { (packageName, repositoryId) ->
+                if (repositoryId > 0L) {
+                    Database.PreferredRepositoryAdapter.put(packageName, repositoryId)
+                } else {
+                    Database.PreferredRepositoryAdapter.delete(packageName)
                 }
             }
         }
@@ -79,6 +99,11 @@ object ProductPreferences {
             oldProductPreference.ignoreVersionCode != productPreference.ignoreVersionCode
         ) {
             mutableSubject.tryEmit(Pair(packageName, productPreference.databaseVersionCode))
+        }
+        if (oldProductPreference.preferredRepositoryId != productPreference.preferredRepositoryId) {
+            mutablePreferredRepositorySubject.tryEmit(
+                Pair(packageName, productPreference.preferredRepositoryId),
+            )
         }
     }
 }

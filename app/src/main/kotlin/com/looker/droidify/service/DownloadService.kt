@@ -95,6 +95,8 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
     data class DownloadState(
         val currentItem: State = State.Idle,
         val queue: List<String> = emptyList(),
+        val batchCompleted: Int = 0,
+        val batchTotal: Int = 0,
     ) {
         infix fun isDownloading(packageName: String): Boolean =
             currentItem.packageName == packageName && (
@@ -119,6 +121,9 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
     private var foregroundFailed = false
     private val downloadQueue = DownloadQueue()
     private var currentTask: CurrentTask? = null
+
+    // Number of update downloads enqueued since the update queue was last empty
+    private var batchTotal = 0
 
     private val lock = Mutex()
 
@@ -145,6 +150,10 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
             if (!downloadQueue.enqueue(task)) {
                 // Already queued or downloading; ignore duplicate
                 return
+            }
+            if (task.isUpdate) {
+                batchTotal++
+                updateBatchProgress()
             }
             notificationManager?.cancel(
                 task.notificationTag,
@@ -222,6 +231,7 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
 
     private fun cancelTasks(packageName: String?) {
         val removed = downloadQueue.cancel(packageName)
+        updateBatchProgress()
         if (removed && packageName != null) {
             if (currentTask == null) {
                 updateCurrentState(State.Cancel(packageName))
@@ -239,6 +249,7 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
                 it.job?.cancel()
                 downloadQueue.completeActive(it.task.packageName)
                 currentTask = null
+                updateBatchProgress()
                 updateCurrentState(State.Cancel(it.task.packageName))
             }
         }
@@ -380,6 +391,18 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
     private fun NotificationCompat.Builder.downloadingNotificationContent(
         state: State,
     ): NotificationCompat.Builder? {
+        val batch = _downloadState.value
+        setSubText(
+            if (batch.batchTotal > 1) {
+                getString(
+                    stringRes.updating_progress_FORMAT,
+                    (batch.batchCompleted + 1).coerceAtMost(batch.batchTotal),
+                    batch.batchTotal,
+                )
+            } else {
+                null
+            },
+        )
         return when (state) {
             is State.Connecting -> {
                 setContentTitle(getString(stringRes.downloading_FORMAT, currentTask!!.task.name))
@@ -498,6 +521,7 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
             }
         } finally {
             downloadQueue.completeActive(task.packageName)
+            updateBatchProgress()
             lock.withLock { currentTask = null }
             handleDownload()
         }
@@ -515,6 +539,16 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
                     it.queue
                 }
             it.copy(currentItem = state, queue = newQueue)
+        }
+    }
+
+    private fun updateBatchProgress() {
+        val remaining = downloadQueue.pendingTasks.count { it.isUpdate } +
+            (if (downloadQueue.activeTask?.isUpdate == true) 1 else 0)
+        if (remaining == 0) batchTotal = 0
+        val total = batchTotal
+        _downloadState.update {
+            it.copy(batchCompleted = (total - remaining).coerceAtLeast(0), batchTotal = total)
         }
     }
 

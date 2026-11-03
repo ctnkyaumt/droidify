@@ -33,6 +33,11 @@ fun Product.serialize(generator: JsonGenerator) {
     generator.writeNumberField(SUGGESTEDVERSIONCODE, suggestedVersionCode)
     generator.writeArray(CATEGORIES) { categories.forEach(::writeString) }
     generator.writeArray(ANTIFEATURES) { antiFeatures.forEach(::writeString) }
+    if (antiFeatureReasons.isNotEmpty()) {
+        generator.writeObjectFieldStart(ANTIFEATURE_REASONS)
+        antiFeatureReasons.forEach { (feature, reason) -> generator.writeStringField(feature, reason) }
+        generator.writeEndObject()
+    }
     generator.writeArray(LICENSES) { licenses.forEach(::writeString) }
     generator.writeArray(DONATES) {
         donates.forEach {
@@ -99,6 +104,7 @@ fun JsonParser.product(): Product {
     var suggestedVersionCode = 0L
     var categories = emptyList<String>()
     var antiFeatures = emptyList<String>()
+    var antiFeatureReasons = emptyMap<String, String>()
     var licenses = emptyList<String>()
     var donates = emptyList<Product.Donate>()
     var screenshots = emptyList<Product.Screenshot>()
@@ -125,6 +131,17 @@ fun JsonParser.product(): Product {
             key.number(SUGGESTEDVERSIONCODE) -> suggestedVersionCode = valueAsLong
             key.array(CATEGORIES) -> categories = collectNotNullStrings()
             key.array(ANTIFEATURES) -> antiFeatures = collectNotNullStrings()
+            key.dictionary(ANTIFEATURE_REASONS) -> {
+                val reasons = mutableMapOf<String, String>()
+                forEachKey {
+                    if (it.token == JsonToken.VALUE_STRING) {
+                        reasons[it.key] = valueAsString
+                    } else {
+                        skipChildren()
+                    }
+                }
+                antiFeatureReasons = reasons
+            }
             key.array(LICENSES) -> licenses = collectNotNullStrings()
             key.array(DONATES) -> donates = collectNotNull(JsonToken.START_OBJECT) {
                 var type = KEY_EMPTY
@@ -198,6 +215,7 @@ fun JsonParser.product(): Product {
         donates = donates,
         screenshots = screenshots,
         releases = releases,
+        antiFeatureReasons = antiFeatureReasons,
     )
 }
 
@@ -222,6 +240,7 @@ private const val UPDATED = "updated"
 private const val SUGGESTEDVERSIONCODE = "suggestedVersionCode"
 private const val CATEGORIES = "categories"
 private const val ANTIFEATURES = "antiFeatures"
+private const val ANTIFEATURE_REASONS = "antiFeatureReasons"
 private const val LICENSES = "licenses"
 private const val DONATES = "donates"
 private const val ADDRESS = "address"

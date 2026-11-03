@@ -23,6 +23,8 @@ data class Product(
     val donates: List<Donate>,
     val screenshots: List<Screenshot>,
     val releases: List<Release>,
+    // Anti-feature name to reason, only when the index provides one
+    val antiFeatureReasons: Map<String, String> = emptyMap(),
 ) {
     data class Author(val name: String, val email: String, val web: String)
 
@@ -106,18 +108,30 @@ data class Product(
     }
 }
 
+/**
+ * Picks the product whose releases are suggested. When [preferredRepositoryId] is set and
+ * that repository provides the app, only its product is considered.
+ */
 fun List<Pair<Product, Repository>>.findSuggested(
     installedItem: InstalledItem?,
-): Pair<Product, Repository>? = maxWithOrNull(
-    compareBy(
-        { (product, _) ->
-            val suggested = UpdateResolver.findSuggestedRelease(product.releases, installedItem)
-            val isSameSignature = installedItem == null ||
-                (suggested != null && UpdateResolver.isSignatureCompatible(installedItem.signatures, suggested.signature))
-            product.compatible && isSameSignature
-        },
-        { (product, _) ->
-            product.versionCode
-        },
-    ),
-)
+    preferredRepositoryId: Long = 0L,
+): Pair<Product, Repository>? {
+    val candidates = if (preferredRepositoryId > 0L) {
+        filter { (_, repository) -> repository.id == preferredRepositoryId }.ifEmpty { this }
+    } else {
+        this
+    }
+    return candidates.maxWithOrNull(
+        compareBy(
+            { (product, _) ->
+                val suggested = UpdateResolver.findSuggestedRelease(product.releases, installedItem)
+                val isSameSignature = installedItem == null ||
+                    (suggested != null && UpdateResolver.isSignatureCompatible(installedItem.signatures, suggested.signature))
+                product.compatible && isSameSignature
+            },
+            { (product, _) ->
+                product.versionCode
+            },
+        ),
+    )
+}

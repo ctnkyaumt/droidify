@@ -10,6 +10,7 @@ import android.provider.Settings
 import android.util.Log
 import android.view.MenuItem
 import android.view.View
+import android.widget.FrameLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.core.net.toUri
 import androidx.fragment.app.DialogFragment
@@ -23,6 +24,8 @@ import androidx.recyclerview.widget.SimpleItemAnimator
 import coil3.load
 import coil3.request.allowHardware
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import com.looker.droidify.content.ProductPreferences
 import com.looker.droidify.installer.installers.launchShizuku
 import com.looker.droidify.installer.model.InstallState
@@ -43,6 +46,7 @@ import com.looker.droidify.ui.appDetail.AppDetailViewModel.Companion.ARG_PACKAGE
 import com.looker.droidify.ui.appDetail.AppDetailViewModel.Companion.ARG_REPO_ADDRESS
 import com.looker.droidify.utility.common.cache.Cache
 import com.looker.droidify.utility.common.extension.authentication
+import com.looker.droidify.utility.common.extension.dpToPx
 import com.looker.droidify.utility.common.extension.getLauncherActivities
 import com.looker.droidify.utility.common.extension.getMutatedIcon
 import com.looker.droidify.utility.common.extension.isFirstItemVisible
@@ -58,6 +62,7 @@ import com.looker.droidify.utility.extension.startUpdate
 import com.looker.droidify.utility.getParcelableCompat
 import com.stfalcon.imageviewer.StfalconImageViewer
 import dagger.hilt.android.AndroidEntryPoint
+import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -104,6 +109,8 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
 
     private var actions = Pair(emptySet<Action>(), null as Action?)
     private var products = emptyList<Pair<Product, Repository>>()
+    private var preferredRepositoryId = 0L
+    private var note = ""
     private var installed: Installed? = null
     private var downloading = false
     private var installing: InstallState? = null
@@ -172,6 +179,8 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
                             val requiredRepo = state.repos.find { it.id == product.repositoryId }
                             requiredRepo?.let { product to it }
                         }
+                        preferredRepositoryId = state.preference.preferredRepositoryId
+                        note = state.preference.note
                         layoutManagerState?.let {
                             recyclerView?.layoutManager!!.onRestoreInstanceState(it)
                         }
@@ -201,6 +210,8 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
                             installedItem = state.installedItem,
                             isFavourite = state.isFavourite,
                             allowIncompatibleVersion = state.allowIncompatibleVersions,
+                            preferredRepositoryId = preferredRepositoryId,
+                            note = note,
                         )
                         updateButtons()
                     }
@@ -246,7 +257,7 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
         preference: ProductPreference = ProductPreferences[viewModel.packageName],
     ) {
         val installed = installed
-        val product = products.findSuggested(installed?.installedItem)?.first
+        val product = products.findSuggested(installed?.installedItem, preferredRepositoryId)?.first
         val suggestedRelease = product?.let {
             UpdateResolver.findSuggestedRelease(it.releases, installed?.installedItem, primaryPlatform)
         } ?: product?.selectedReleases?.firstOrNull()
@@ -439,6 +450,7 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
                     packageName = viewModel.packageName,
                     installedItem = installed?.installedItem,
                     products = products,
+                    preferredRepositoryId = preferredRepositoryId,
                 )
             }
 
@@ -526,13 +538,62 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
         updateButtons(preference)
     }
 
+    override fun onPreferredRepositoryClick() {
+        val repositories = products.map { it.second }.distinctBy { it.id }
+        if (repositories.size < 2) return
+        val labels = listOf(getString(stringRes.preferred_repository_automatic)) +
+            repositories.map { it.name }
+        val checked = repositories.indexOfFirst { it.id == preferredRepositoryId } + 1
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(stringRes.preferred_repository)
+            .setSingleChoiceItems(labels.toTypedArray(), checked) { dialog, position ->
+                val repositoryId = if (position == 0) 0L else repositories[position - 1].id
+                viewModel.setPreferredRepository(repositoryId)
+                dialog.dismiss()
+            }
+            .setNegativeButton(stringRes.cancel, null)
+            .show()
+    }
+
+    override fun onNoteClick() {
+        val context = requireContext()
+        val input = TextInputEditText(context).apply {
+            setText(note)
+            setSelection(note.length)
+            minLines = 2
+        }
+        val inputLayout = TextInputLayout(context).apply {
+            hint = getString(stringRes.note_hint)
+            addView(input)
+        }
+        val container = FrameLayout(context).apply {
+            val horizontal = 24.dpToPx.roundToInt()
+            setPadding(horizontal, 8.dpToPx.roundToInt(), horizontal, 0)
+            addView(inputLayout)
+        }
+        MaterialAlertDialogBuilder(context)
+            .setTitle(stringRes.note)
+            .setView(container)
+            .setPositiveButton(stringRes.save) { _, _ ->
+                viewModel.setNote(input.text?.toString().orEmpty())
+            }
+            .setNegativeButton(stringRes.cancel, null)
+            .apply {
+                if (note.isNotEmpty()) {
+                    setNeutralButton(stringRes.delete) { _, _ -> viewModel.setNote("") }
+                }
+            }
+            .show()
+    }
+
     override fun onPermissionsClick(group: String?, permissions: List<String>) {
         MessageDialog(Message.Permissions(group, permissions))
             .show(childFragmentManager)
     }
 
     override fun onScreenshotClick(position: Int) {
-        val (product, repository) = products.findSuggested(installed?.installedItem) ?: return
+        val (product, repository) =
+            products.findSuggested(installed?.installedItem, preferredRepositoryId) ?: return
         val screenshots = product.screenshots
         val size = screenshots.count { it.type != Product.Screenshot.Type.VIDEO }
         val isRTL = context?.resources?.configuration?.layoutDirection == View.LAYOUT_DIRECTION_RTL

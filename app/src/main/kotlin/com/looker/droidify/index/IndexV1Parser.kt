@@ -279,6 +279,7 @@ object IndexV1Parser {
         var suggestedVersionCode = 0L
         var categories = emptyList<String>()
         var antiFeatures = emptyList<String>()
+        var antiFeatureReasons = emptyMap<String, String>()
         val licenses = mutableListOf<String>()
         val donates = mutableListOf<Product.Donate>()
         val localizedMap = mutableMapOf<String, Localized>()
@@ -308,6 +309,40 @@ object IndexV1Parser {
                 key.array(KEY_PRODUCT_ANTIFEATURES) ->
                     antiFeatures =
                         collectDistinctNotEmptyStrings()
+
+                // Some indexes carry anti-features as a map of name to (localized) reason
+                key.dictionary(KEY_PRODUCT_ANTIFEATURES) -> {
+                    val names = mutableListOf<String>()
+                    val reasons = mutableMapOf<String, String>()
+                    forEachKey { antiFeature ->
+                        val antiFeatureName = antiFeature.key
+                        if (antiFeatureName.isNotEmpty()) names += antiFeatureName
+                        val reason = when (antiFeature.token) {
+                            JsonToken.VALUE_STRING -> valueAsString
+                            JsonToken.START_OBJECT -> {
+                                val localizedReasons = mutableMapOf<String, String>()
+                                forEachKey {
+                                    if (it.token == JsonToken.VALUE_STRING) {
+                                        localizedReasons[it.key] = valueAsString
+                                    } else {
+                                        skipChildren()
+                                    }
+                                }
+                                localizedReasons.getBestLocale(
+                                    getLocales(Resources.getSystem().configuration),
+                                )
+                            }
+
+                            else -> {
+                                skipChildren()
+                                null
+                            }
+                        }
+                        reason?.trim()?.nullIfEmpty()?.let { reasons[antiFeatureName] = it }
+                    }
+                    antiFeatures = names.distinct()
+                    antiFeatureReasons = reasons
+                }
 
                 key.string(KEY_PRODUCT_LICENSE) -> licenses += valueAsString.split(',')
                     .filter { it.isNotEmpty() }
@@ -428,6 +463,7 @@ object IndexV1Parser {
             donates = donates.sortedWith(DonateComparator),
             screenshots = screenshots,
             releases = emptyList(),
+            antiFeatureReasons = antiFeatureReasons,
         )
     }
 

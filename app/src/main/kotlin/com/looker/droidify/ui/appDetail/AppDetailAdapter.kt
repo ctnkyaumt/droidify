@@ -21,6 +21,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.PopupWindow
@@ -107,6 +108,8 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
         fun onRequestAddRepository(address: String)
         fun onUriClick(uri: Uri, shouldConfirm: Boolean): Boolean
         fun onCustomButtonClick(url: String)
+        fun onPreferredRepositoryClick()
+        fun onNoteClick()
     }
 
     enum class Action(@param:StringRes val titleResId: Int, @param:DrawableRes val iconResId: Int) {
@@ -168,6 +171,11 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
     }
 
     private enum class TextType { DESCRIPTION, ANTI_FEATURES, CHANGES }
+
+    private enum class SettingType(val iconResId: Int) {
+        PREFERRED_REPOSITORY(drawableRes.ic_sync),
+        NOTE(drawableRes.ic_edit),
+    }
 
     private enum class LinkType(
         val iconResId: Int,
@@ -299,7 +307,7 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
             abstract fun getTitle(context: Context): String
             abstract val uri: Uri?
 
-            val displayLink: String?
+            open val displayLink: String?
                 get() = uri?.schemeSpecificPart?.nullIfEmpty()
                     ?.let { if (it.startsWith("//")) null else it } ?: uri?.toString()
 
@@ -318,6 +326,27 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
                     return text.nullIfEmpty()?.let { linkType.format?.invoke(context, it) ?: it }
                         ?: context.getString(linkType.titleResId)
                 }
+            }
+
+            // Per-app user setting shown as a link row, e.g. preferred repository or note
+            class Setting(
+                val settingType: SettingType,
+                val title: String,
+                val value: String,
+            ) : LinkItem() {
+                override val descriptor: String
+                    get() = "link.setting.${settingType.name}"
+
+                override val iconResId: Int
+                    get() = settingType.iconResId
+
+                override fun getTitle(context: Context): String = title
+
+                override val uri: Uri?
+                    get() = null
+
+                override val displayLink: String?
+                    get() = value.nullIfEmpty()
             }
 
             class Donate(val donate: Product.Donate) : LinkItem() {
@@ -453,10 +482,25 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
     }
 
     private class ScreenShotViewHolder(context: Context) :
-        RecyclerView.ViewHolder(RecyclerView(context)) {
+        RecyclerView.ViewHolder(FrameLayout(context)) {
 
-        val screenshotsRecycler: RecyclerView
-            get() = itemView as RecyclerView
+        // Wraps its content and is centered when screenshots don't fill the width
+        val screenshotsRecycler = RecyclerView(context)
+
+        init {
+            itemView.layoutParams = RecyclerView.LayoutParams(
+                RecyclerView.LayoutParams.MATCH_PARENT,
+                RecyclerView.LayoutParams.WRAP_CONTENT,
+            )
+            (itemView as FrameLayout).addView(
+                screenshotsRecycler,
+                FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    Gravity.CENTER_HORIZONTAL,
+                ),
+            )
+        }
     }
 
     private class CustomButtonsViewHolder(context: Context) :
@@ -734,9 +778,11 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
         installedItem: InstalledItem?,
         isFavourite: Boolean,
         allowIncompatibleVersion: Boolean,
+        preferredRepositoryId: Long = 0L,
+        note: String = "",
     ) {
         items.clear()
-        val productRepository = products.findSuggested(installedItem) ?: run {
+        val productRepository = products.findSuggested(installedItem, preferredRepositoryId) ?: run {
             items += Item.EmptyItem(packageName, suggestedRepo)
             notifyDataSetChanged()
             return
@@ -791,6 +837,22 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
                 )
             }
         }
+
+        val repositories = products.map { it.second }.distinctBy { it.id }
+        if (repositories.size > 1) {
+            val preferredRepository = repositories.find { it.id == preferredRepositoryId }
+            items += Item.LinkItem.Setting(
+                settingType = SettingType.PREFERRED_REPOSITORY,
+                title = context.getString(stringRes.preferred_repository),
+                value = preferredRepository?.name
+                    ?: context.getString(stringRes.preferred_repository_automatic),
+            )
+        }
+        items += Item.LinkItem.Setting(
+            settingType = SettingType.NOTE,
+            title = context.getString(if (note.isEmpty()) stringRes.add_note else stringRes.note),
+            value = note,
+        )
 
         val textViewHolder = TextViewHolder(context)
         val textViewWidthSpec = context.resources.displayMetrics.widthPixels
@@ -883,8 +945,9 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
             }
         }
 
+        val antiFeatureReasons = productRepository.first.antiFeatureReasons
         val antiFeatures = productRepository.first.antiFeatures.map {
-            when (it) {
+            val label = when (it) {
                 "Ads" -> context.getString(stringRes.has_advertising)
                 "ApplicationDebuggable" -> context.getString(stringRes.compiled_for_debugging)
                 "DisabledAlgorithm" -> context.getString(stringRes.signed_using_unsafe_algorithm)
@@ -903,10 +966,23 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
                 "TetheredNet" -> context.getString(stringRes.has_tethered_network)
                 else -> context.getString(stringRes.unknown_FORMAT, it)
             }
+            val reason = antiFeatureReasons[it]
+            if (reason.isNullOrBlank()) label else "$label: $reason"
         }.joinToString(separator = "\n") { "\u2022 $it" }
         if (antiFeatures.isNotEmpty()) {
+            val antiFeaturesText = buildString {
+                append(antiFeatures)
+                appendLine()
+                appendLine()
+                append(
+                    context.getString(
+                        stringRes.anti_features_source_FORMAT,
+                        productRepository.second.name,
+                    ),
+                )
+            }
             items += Item.SectionItem(SectionType.ANTI_FEATURES)
-            items += Item.TextItem(TextType.ANTI_FEATURES, antiFeatures)
+            items += Item.TextItem(TextType.ANTI_FEATURES, antiFeaturesText)
         }
 
         val changes = productRepository.first.whatsNew
@@ -1256,7 +1332,12 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
             ViewType.LINK -> LinkViewHolder(parent.inflate(R.layout.link_item)).apply {
                 itemView.setOnClickListener {
                     val linkItem = items[absoluteAdapterPosition] as Item.LinkItem
-                    if (linkItem.uri?.let { callbacks.onUriClick(it, false) } != true) {
+                    if (linkItem is Item.LinkItem.Setting) {
+                        when (linkItem.settingType) {
+                            SettingType.PREFERRED_REPOSITORY -> callbacks.onPreferredRepositoryClick()
+                            SettingType.NOTE -> callbacks.onNoteClick()
+                        }
+                    } else if (linkItem.uri?.let { callbacks.onUriClick(it, false) } != true) {
                         linkItem.displayLink?.let { copyLinkToClipboard(itemView, it) }
                     }
                 }
@@ -1473,7 +1554,6 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
                 item as Item.ScreenshotItem
                 holder.screenshotsRecycler.run {
                     if (layoutManager == null) {
-                        setHasFixedSize(true)
                         isNestedScrollingEnabled = false
                         clipToPadding = false
                         val padding = 8.dp
@@ -1602,10 +1682,13 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
                     } else {
                         0
                     }
-                holder.itemView.isEnabled = item.uri != null
+                val isSetting = item is Item.LinkItem.Setting
+                holder.itemView.isEnabled = item.uri != null || isSetting
                 holder.icon.setImageResource(item.iconResId)
                 holder.text.text = item.getTitle(context)
-                holder.link.isVisible = item.uri != null
+                holder.link.isVisible = item.displayLink != null
+                // Notes can span several lines
+                holder.link.setSingleLine(!isSetting)
                 holder.link.text = item.displayLink
             }
 

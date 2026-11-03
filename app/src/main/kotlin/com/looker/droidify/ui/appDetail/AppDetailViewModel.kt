@@ -5,6 +5,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.looker.droidify.BuildConfig
+import com.looker.droidify.content.ProductPreferences
 import com.looker.droidify.data.PrivacyRepository
 import com.looker.droidify.data.local.model.RBLog
 import com.looker.droidify.data.model.toPackageName
@@ -23,12 +24,15 @@ import com.looker.droidify.installer.model.InstallItem
 import com.looker.droidify.installer.model.InstallState
 import com.looker.droidify.model.InstalledItem
 import com.looker.droidify.model.Product
+import com.looker.droidify.model.ProductPreference
 import com.looker.droidify.model.Repository
 import com.looker.droidify.utility.common.extension.asStateFlow
 import com.looker.droidify.utility.extension.combine
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine as combineFlow
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -55,6 +59,8 @@ class AppDetailViewModel @Inject constructor(
     val customButtons: StateFlow<List<CustomButton>> = customButtonRepository.buttons
         .asStateFlow(emptyList())
 
+    private val productPreference = MutableStateFlow(ProductPreferences[packageName])
+
     val state =
         combine(
             Database.ProductAdapter.getStream(packageName),
@@ -78,7 +84,23 @@ class AppDetailViewModel @Inject constructor(
                 isSelf = packageName == BuildConfig.APPLICATION_ID,
                 addressIfUnavailable = suggestedAddress,
             )
+        }.combineFlow(productPreference) { state, preference ->
+            state.copy(preference = preference)
         }.asStateFlow(AppDetailUiState())
+
+    fun setPreferredRepository(repositoryId: Long) {
+        updatePreference { it.copy(preferredRepositoryId = repositoryId) }
+    }
+
+    fun setNote(note: String) {
+        updatePreference { it.copy(note = note.trim()) }
+    }
+
+    private fun updatePreference(block: (ProductPreference) -> ProductPreference) {
+        val preference = block(ProductPreferences[packageName])
+        ProductPreferences[packageName] = preference
+        productPreference.value = preference
+    }
 
     fun shizukuState(context: Context): ShizukuState? {
         val isSelected =
@@ -166,4 +188,5 @@ data class AppDetailUiState(
     val isFavourite: Boolean = false,
     val allowIncompatibleVersions: Boolean = false,
     val addressIfUnavailable: String? = null,
+    val preference: ProductPreference = ProductPreference(false, 0L),
 )

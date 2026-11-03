@@ -53,7 +53,7 @@ class DatabaseHelper(context: Context) :
     override fun onOpen(db: SQLiteDatabase) {
         // Handle memory tables and indexes
         db.execSQL("ATTACH DATABASE ':memory:' AS memory")
-        handleTables(db, Schema.Installed, Schema.Lock)
+        handleTables(db, Schema.Installed, Schema.Lock, Schema.PreferredRepository)
         handlePersistentTables(db, Schema.RBLog, Schema.DownloadStats)
         handleIndexes(
             db,
@@ -62,6 +62,7 @@ class DatabaseHelper(context: Context) :
             Schema.Category,
             Schema.Installed,
             Schema.Lock,
+            Schema.PreferredRepository,
             Schema.RBLog,
             Schema.DownloadStats,
         )

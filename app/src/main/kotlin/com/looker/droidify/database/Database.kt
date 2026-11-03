@@ -144,6 +144,18 @@ object Database {
       """
         }
 
+        object PreferredRepository : Table {
+            const val ROW_PACKAGE_NAME = "package_name"
+            const val ROW_REPOSITORY_ID = "repository_id"
+
+            override val memory = true
+            override val innerName = "preferred_repository"
+            override val createTable = """
+        $ROW_PACKAGE_NAME TEXT PRIMARY KEY,
+        $ROW_REPOSITORY_ID INTEGER NOT NULL
+      """
+        }
+
         object RBLog : Table {
             const val ROW_HASH = "hash"
             const val ROW_REPOSITORY = "repository"
@@ -600,13 +612,18 @@ object Database {
                 builder += "0 AS ${Schema.Synthetic.ROW_MATCH_RANK},"
             }
 
-            builder += """MAX((product.${Schema.Product.ROW_COMPATIBLE} AND
+            // Rows from the user's preferred repository (if any) always win
+            builder += """MAX((preferred.${Schema.PreferredRepository.ROW_REPOSITORY_ID} IS NULL OR
+        preferred.${Schema.PreferredRepository.ROW_REPOSITORY_ID} = product.${Schema.Product.ROW_REPOSITORY_ID}) ||
+        (product.${Schema.Product.ROW_COMPATIBLE} AND
         (installed.${Schema.Installed.ROW_SIGNATURE} IS NULL OR $signatureMatches)) ||
         PRINTF('%016X', product.${Schema.Product.ROW_VERSION_CODE})) FROM ${Schema.Product.name} AS product"""
             builder += """JOIN ${Schema.Repository.name} AS repository
         ON product.${Schema.Product.ROW_REPOSITORY_ID} = repository.${Schema.Repository.ROW_ID}"""
             builder += """LEFT JOIN ${Schema.Lock.name} AS lock
         ON product.${Schema.Product.ROW_PACKAGE_NAME} = lock.${Schema.Lock.ROW_PACKAGE_NAME}"""
+            builder += """LEFT JOIN ${Schema.PreferredRepository.name} AS preferred
+        ON product.${Schema.Product.ROW_PACKAGE_NAME} = preferred.${Schema.PreferredRepository.ROW_PACKAGE_NAME}"""
 
             if (!installed && !updates) {
                 builder += "LEFT"
@@ -820,6 +837,42 @@ object Database {
 
         fun delete(packageName: String) {
             db.delete(Schema.Lock.name, "${Schema.Lock.ROW_PACKAGE_NAME} = ?", arrayOf(packageName))
+            notifyChanged(Subject.Products)
+        }
+    }
+
+    object PreferredRepositoryAdapter {
+        private fun put(packageName: String, repositoryId: Long, notify: Boolean) {
+            db.insertOrReplace(
+                true,
+                Schema.PreferredRepository.name,
+                ContentValues().apply {
+                    put(Schema.PreferredRepository.ROW_PACKAGE_NAME, packageName)
+                    put(Schema.PreferredRepository.ROW_REPOSITORY_ID, repositoryId)
+                },
+            )
+            if (notify) {
+                notifyChanged(Subject.Products)
+            }
+        }
+
+        fun put(packageName: String, repositoryId: Long) = put(packageName, repositoryId, true)
+
+        fun putAll(preferred: List<Pair<String, Long>>) {
+            db.transaction {
+                db.delete(Schema.PreferredRepository.name, null, null)
+                preferred.forEach { (packageName, repositoryId) ->
+                    put(packageName, repositoryId, false)
+                }
+            }
+        }
+
+        fun delete(packageName: String) {
+            db.delete(
+                Schema.PreferredRepository.name,
+                "${Schema.PreferredRepository.ROW_PACKAGE_NAME} = ?",
+                arrayOf(packageName),
+            )
             notifyChanged(Subject.Products)
         }
     }
