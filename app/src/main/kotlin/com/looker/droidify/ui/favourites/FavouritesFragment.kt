@@ -1,6 +1,7 @@
 package com.looker.droidify.ui.favourites
 
 import android.os.Bundle
+import android.os.Parcelable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,9 +17,13 @@ import com.looker.droidify.database.Database
 import com.looker.droidify.ui.ScreenFragment
 import com.looker.droidify.utility.common.extension.systemBarsPadding
 import com.looker.droidify.utility.extension.mainActivity
+import com.looker.droidify.utility.getParcelableCompat
+import com.looker.droidify.widget.RecyclerFastScroller
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+
+private const val STATE_LAYOUT_MANAGER = "state_layout_manager"
 
 @AndroidEntryPoint
 class FavouritesFragment : ScreenFragment() {
@@ -27,6 +32,7 @@ class FavouritesFragment : ScreenFragment() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var recyclerViewAdapter: FavouriteFragmentAdapter
+    private var layoutManagerState: Parcelable? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -46,6 +52,7 @@ class FavouritesFragment : ScreenFragment() {
                         FavouriteFragmentAdapter { mainActivity.navigateProduct(it) }
                     this.adapter = recyclerViewAdapter
                     systemBarsPadding(fabPadding = 0)
+                    RecyclerFastScroller(this)
                     recyclerView = this
                 },
             )
@@ -55,6 +62,10 @@ class FavouritesFragment : ScreenFragment() {
                 launch {
                     viewModel.favouriteApps.collect { apps ->
                         recyclerViewAdapter.apps = apps
+                        layoutManagerState?.let {
+                            layoutManagerState = null
+                            recyclerView.layoutManager?.onRestoreInstanceState(it)
+                        }
                     }
                 }
                 launch {
@@ -74,6 +85,15 @@ class FavouritesFragment : ScreenFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        layoutManagerState = savedInstanceState?.getParcelableCompat(STATE_LAYOUT_MANAGER)
         mainActivity.onToolbarCreated(toolbar)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        val managerState = layoutManagerState ?: recyclerView.layoutManager?.onSaveInstanceState()
+        if (managerState != null) {
+            outState.putParcelable(STATE_LAYOUT_MANAGER, managerState)
+        }
     }
 }

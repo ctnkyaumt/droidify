@@ -19,6 +19,10 @@ class FavouriteFragmentAdapter(
     private val onProductClick: (String) -> Unit,
 ) : RecyclerView.Adapter<FavouriteFragmentAdapter.ViewHolder>() {
 
+    init {
+        stateRestorationPolicy = StateRestorationPolicy.PREVENT_WHEN_EMPTY
+    }
+
     class ViewHolder(binding: ProductItemBinding) : RecyclerView.ViewHolder(binding.root) {
         val icon = binding.icon
         val name = binding.name
