@@ -3,6 +3,7 @@ package com.looker.droidify.ui.favourites
 import android.os.Bundle
 import android.os.Parcelable
 import android.view.LayoutInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.viewModels
@@ -14,7 +15,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.looker.droidify.R
 import com.looker.droidify.database.Database
+import com.looker.droidify.datastore.extension.sortOrderName
+import com.looker.droidify.datastore.model.supportedSortOrders
 import com.looker.droidify.ui.ScreenFragment
+import com.looker.droidify.utility.common.extension.getMutatedIcon
 import com.looker.droidify.utility.common.extension.systemBarsPadding
 import com.looker.droidify.utility.extension.mainActivity
 import com.looker.droidify.utility.getParcelableCompat
@@ -87,6 +91,27 @@ class FavouritesFragment : ScreenFragment() {
         super.onViewCreated(view, savedInstanceState)
         layoutManagerState = savedInstanceState?.getParcelableCompat(STATE_LAYOUT_MANAGER)
         mainActivity.onToolbarCreated(toolbar)
+
+        val sortOrders = supportedSortOrders()
+        val sortMenuItems = toolbar.menu.addSubMenu(0, 0, 0, R.string.sorting_order)
+            .setIcon(toolbar.context.getMutatedIcon(R.drawable.ic_sort))
+            .let { menu ->
+                menu.item.setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_ALWAYS)
+                val items = sortOrders.map { sortOrder ->
+                    menu.add(context.sortOrderName(sortOrder))
+                        .setOnMenuItemClickListener {
+                            viewModel.setSortOrder(sortOrder)
+                            true
+                        }
+                }
+                menu.setGroupCheckable(0, true, true)
+                items
+            }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.sortOrder.collect { sortOrder ->
+                sortMenuItems.getOrNull(sortOrders.indexOf(sortOrder))?.isChecked = true
+            }
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
