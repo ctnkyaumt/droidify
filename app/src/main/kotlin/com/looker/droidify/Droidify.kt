@@ -138,7 +138,7 @@ class Droidify : Application(), SingletonImageLoader.Factory, Configuration.Prov
             }
             launch {
                 settingsRepository.get { alternativeNotificationIcon }.collect {
-                    NotificationIconHelper.setAlternative(applicationContext, it)
+                    NotificationIconHelper.useAlternative = it
                 }
             }
             launch {
