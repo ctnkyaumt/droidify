@@ -14,7 +14,8 @@ data class DownloadRetryPolicy(
             is NetworkResponse.Error.IO -> true
 
             is NetworkResponse.Error.Http -> {
-                response.statusCode == 408 || response.statusCode == 429 || response.statusCode in 500..599
+                // 416: the partial file was deleted, so the next attempt starts from zero
+                response.statusCode == 408 || response.statusCode == 416 || response.statusCode == 429 || response.statusCode in 500..599
             }
 
             is NetworkResponse.Error.Unknown -> true

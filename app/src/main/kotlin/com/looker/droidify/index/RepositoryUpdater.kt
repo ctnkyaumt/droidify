@@ -487,7 +487,10 @@ object RepositoryUpdater {
             .map { (release, incompatibilities) ->
                 release.copy(
                     incompatibilities = incompatibilities,
-                    selected = firstSelected?.first?.identifier == release.identifier,
+                    selected = firstSelected?.let {
+                        it.first.versionCode == release.versionCode &&
+                            it.second == incompatibilities
+                    } ?: false,
                 )
             }
         return product.copy(releases = releases)
