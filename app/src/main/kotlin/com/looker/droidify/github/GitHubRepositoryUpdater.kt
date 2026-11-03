@@ -395,7 +395,8 @@ object GitHubRepositoryUpdater {
         get() = "$id:${updatedAt.orEmpty()}:$size"
 
     private fun probeCacheFile(context: Context, repositoryId: Long): File =
-        File(File(context.filesDir, PROBE_CACHE_DIR), "probe_$repositoryId.json")
+        // v2: entries written before 1.1.0 lack the icon resource ids
+        File(File(context.filesDir, PROBE_CACHE_DIR), "probe_v2_$repositoryId.json")
 
     private fun readProbeCache(file: File): Map<String, ApkManifest> = try {
         if (file.exists()) {
@@ -442,7 +443,8 @@ object GitHubRepositoryUpdater {
     }
 
     private fun iconCacheFile(context: Context, repositoryId: Long): File =
-        File(File(context.filesDir, PROBE_CACHE_DIR), "icon_$repositoryId.json")
+        // v2: 1.1.0 cached "none" for icons it resolved from outdated probe entries
+        File(File(context.filesDir, PROBE_CACHE_DIR), "icon_v2_$repositoryId.json")
 
     private fun readIconCache(file: File): Map<String, GitHubIconCacheEntry> = try {
         if (file.exists()) {
