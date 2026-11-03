@@ -21,6 +21,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.PopupWindow
@@ -481,10 +482,25 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
     }
 
     private class ScreenShotViewHolder(context: Context) :
-        RecyclerView.ViewHolder(RecyclerView(context)) {
+        RecyclerView.ViewHolder(FrameLayout(context)) {
 
-        val screenshotsRecycler: RecyclerView
-            get() = itemView as RecyclerView
+        // Wraps its content and is centered when screenshots don't fill the width
+        val screenshotsRecycler = RecyclerView(context)
+
+        init {
+            itemView.layoutParams = RecyclerView.LayoutParams(
+                RecyclerView.LayoutParams.MATCH_PARENT,
+                RecyclerView.LayoutParams.WRAP_CONTENT,
+            )
+            (itemView as FrameLayout).addView(
+                screenshotsRecycler,
+                FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    Gravity.CENTER_HORIZONTAL,
+                ),
+            )
+        }
     }
 
     private class CustomButtonsViewHolder(context: Context) :
@@ -1538,7 +1554,6 @@ class AppDetailAdapter(private val callbacks: Callbacks) :
                 item as Item.ScreenshotItem
                 holder.screenshotsRecycler.run {
                     if (layoutManager == null) {
-                        setHasFixedSize(true)
                         isNestedScrollingEnabled = false
                         clipToPadding = false
                         val padding = 8.dp
