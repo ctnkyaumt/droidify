@@ -28,6 +28,7 @@ data class Settings(
     val language: String = "system",
     val incompatibleVersions: Boolean = false,
     val notifyUpdate: Boolean = true,
+    val alternativeNotificationIcon: Boolean = false,
     val unstableUpdate: Boolean = false,
     val ignoreSignature: Boolean = false,
     val theme: Theme = Theme.SYSTEM,

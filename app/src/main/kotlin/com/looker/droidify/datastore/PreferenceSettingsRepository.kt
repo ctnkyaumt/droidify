@@ -75,6 +75,9 @@ class PreferenceSettingsRepository(
     override suspend fun enableNotifyUpdates(enable: Boolean) =
         NOTIFY_UPDATES.update(enable)
 
+    override suspend fun setAlternativeNotificationIcon(enable: Boolean) =
+        ALTERNATIVE_NOTIFICATION_ICON.update(enable)
+
     override suspend fun enableUnstableUpdates(enable: Boolean) =
         UNSTABLE_UPDATES.update(enable)
 
@@ -216,6 +219,7 @@ class PreferenceSettingsRepository(
         val language = preferences[LANGUAGE] ?: "system"
         val incompatibleVersions = preferences[INCOMPATIBLE_VERSIONS] ?: false
         val notifyUpdate = preferences[NOTIFY_UPDATES] ?: true
+        val alternativeNotificationIcon = preferences[ALTERNATIVE_NOTIFICATION_ICON] ?: false
         val unstableUpdate = preferences[UNSTABLE_UPDATES] ?: false
         val ignoreSignature = preferences[IGNORE_SIGNATURE] ?: false
         val theme = Theme.valueOf(preferences[THEME] ?: Theme.SYSTEM.name)
@@ -243,6 +247,7 @@ class PreferenceSettingsRepository(
             language = language,
             incompatibleVersions = incompatibleVersions,
             notifyUpdate = notifyUpdate,
+            alternativeNotificationIcon = alternativeNotificationIcon,
             unstableUpdate = unstableUpdate,
             ignoreSignature = ignoreSignature,
             theme = theme,
@@ -276,6 +281,7 @@ class PreferenceSettingsRepository(
         val LANGUAGE = stringPreferencesKey("key_language")
         val INCOMPATIBLE_VERSIONS = booleanPreferencesKey("key_incompatible_versions")
         val NOTIFY_UPDATES = booleanPreferencesKey("key_notify_updates")
+        val ALTERNATIVE_NOTIFICATION_ICON = booleanPreferencesKey("key_alternative_notification_icon")
         val UNSTABLE_UPDATES = booleanPreferencesKey("key_unstable_updates")
         val IGNORE_SIGNATURE = booleanPreferencesKey("key_ignore_signature")
         val DYNAMIC_THEME = booleanPreferencesKey("key_dynamic_theme")
@@ -310,6 +316,7 @@ class PreferenceSettingsRepository(
             set(LANGUAGE, settings.language)
             set(INCOMPATIBLE_VERSIONS, settings.incompatibleVersions)
             set(NOTIFY_UPDATES, settings.notifyUpdate)
+            set(ALTERNATIVE_NOTIFICATION_ICON, settings.alternativeNotificationIcon)
             set(UNSTABLE_UPDATES, settings.unstableUpdate)
             set(THEME, settings.theme.name)
             set(DYNAMIC_THEME, settings.dynamicTheme)

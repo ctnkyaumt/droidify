@@ -41,6 +41,7 @@ import com.looker.droidify.utility.common.extension.startServiceCompat
 import com.looker.droidify.utility.common.extension.stopForegroundCompat
 import com.looker.droidify.utility.common.extension.toPendingIntent
 import com.looker.droidify.utility.common.extension.updateAsMutable
+import com.looker.droidify.utility.NotificationIconHelper
 import com.looker.droidify.utility.common.log
 import com.looker.droidify.utility.notifications.createInstallNotification
 import com.looker.droidify.utility.notifications.installNotification
@@ -260,7 +261,7 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
             NotificationCompat
                 .Builder(this, Constants.NOTIFICATION_CHANNEL_DOWNLOADING)
                 .setAutoCancel(true)
-                .setSmallIcon(android.R.drawable.stat_notify_error)
+                .setSmallIcon(NotificationIconHelper.getNotificationIcon(this, android.R.drawable.stat_notify_error))
                 .setColor(Color.GREEN)
                 .setOnlyAlertOnce(true)
                 .setContentIntent(intent)
@@ -317,7 +318,7 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
     private val stateNotificationBuilder by lazy {
         NotificationCompat
             .Builder(this, Constants.NOTIFICATION_CHANNEL_DOWNLOADING)
-            .setSmallIcon(android.R.drawable.stat_sys_download)
+            .setSmallIcon(NotificationIconHelper.getNotificationIcon(this, android.R.drawable.stat_sys_download))
             .setColor(Color.GREEN)
             .addAction(
                 0,
@@ -362,7 +363,7 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
             Constants.NOTIFICATION_ID_DOWNLOADING,
             NotificationCompat
                 .Builder(this, Constants.NOTIFICATION_CHANNEL_DOWNLOADING)
-                .setSmallIcon(android.R.drawable.stat_sys_download)
+                .setSmallIcon(NotificationIconHelper.getNotificationIcon(this, android.R.drawable.stat_sys_download))
                 .setColor(Color.GREEN)
                 .setAutoCancel(true)
                 .setContentTitle(getString(stringRes.updates))

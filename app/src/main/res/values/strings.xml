@@ -156,6 +156,8 @@
     <string name="no_proxy">No proxy</string>
     <string name="notify_about_updates">Notify for updates</string>
     <string name="notify_about_updates_summary">Show a notification when a new app version is available</string>
+    <string name="alternative_notification_icon">Alternative notification icon</string>
+    <string name="alternative_notification_icon_summary">Use a package icon instead of the alert badge for notifications</string>
     <string name="number_of_applications">Number of apps</string>
     <string name="ok">OK</string>
     <string name="only_compatible_with_FORMAT">Only compatible with %s</string>

@@ -36,6 +36,7 @@ import com.looker.droidify.utility.common.extension.startForegroundSafe
 import com.looker.droidify.utility.common.extension.startServiceCompat
 import com.looker.droidify.utility.common.extension.stopForegroundCompat
 import com.looker.droidify.utility.common.result.Result
+import com.looker.droidify.utility.NotificationIconHelper
 import com.looker.droidify.utility.RepoSyncErrorManager
 import com.looker.droidify.utility.extension.startUpdate
 import com.looker.droidify.utility.notifications.updatesAvailableNotification
@@ -414,7 +415,7 @@ class SyncService : ConnectionService<SyncService.Binder>() {
             Constants.NOTIFICATION_ID_SYNCING,
             NotificationCompat
                 .Builder(this, Constants.NOTIFICATION_CHANNEL_SYNCING)
-                .setSmallIcon(AndroidR.drawable.stat_sys_warning)
+                .setSmallIcon(NotificationIconHelper.getNotificationIcon(this, AndroidR.drawable.stat_sys_warning))
                 .setColor(
                     ContextThemeWrapper(this, styleRes.Theme_Main_Light)
                         .getColorFromAttr(AndroidR.attr.colorPrimary).defaultColor,
@@ -435,7 +436,7 @@ class SyncService : ConnectionService<SyncService.Binder>() {
     private val stateNotificationBuilder by lazy {
         NotificationCompat
             .Builder(this, Constants.NOTIFICATION_CHANNEL_SYNCING)
-            .setSmallIcon(R.drawable.ic_sync)
+            .setSmallIcon(NotificationIconHelper.getNotificationIcon(this, R.drawable.ic_sync))
             .setColor(
                 ContextThemeWrapper(this, styleRes.Theme_Main_Light)
                     .getColorFromAttr(AndroidR.attr.colorPrimary).defaultColor,

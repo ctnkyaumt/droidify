@@ -110,6 +110,12 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun setAlternativeNotificationIcon(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setAlternativeNotificationIcon(enabled)
+        }
+    }
+
     fun setUnstableUpdates(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.enableUnstableUpdates(enabled)

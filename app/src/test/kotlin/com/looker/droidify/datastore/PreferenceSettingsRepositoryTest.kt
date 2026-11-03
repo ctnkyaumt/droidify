@@ -122,6 +122,13 @@ class PreferenceSettingsRepositoryTest {
         assertEquals(6.hours, settings.autoSyncInterval)
     }
 
+    @Test
+    fun `setAlternativeNotificationIcon updates setting`() = runTest {
+        repository.setAlternativeNotificationIcon(true)
+        val settings = repository.getInitial()
+        assertTrue(settings.alternativeNotificationIcon)
+    }
+
 
 
     @Test

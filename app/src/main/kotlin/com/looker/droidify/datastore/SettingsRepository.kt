@@ -29,6 +29,8 @@ interface SettingsRepository {
 
     suspend fun enableNotifyUpdates(enable: Boolean)
 
+    suspend fun setAlternativeNotificationIcon(enable: Boolean)
+
     suspend fun enableUnstableUpdates(enable: Boolean)
 
     suspend fun setIgnoreSignature(enable: Boolean)

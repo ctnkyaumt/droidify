@@ -7,6 +7,7 @@ import android.graphics.Color
 import androidx.core.app.NotificationCompat
 import com.looker.droidify.R
 import com.looker.droidify.installer.model.InstallState
+import com.looker.droidify.utility.NotificationIconHelper
 import com.looker.droidify.utility.common.Constants.NOTIFICATION_CHANNEL_INSTALL
 import com.looker.droidify.utility.common.Constants.NOTIFICATION_ID_INSTALL
 
@@ -47,25 +48,25 @@ fun Context.createInstallNotification(
             setColor(Color.GREEN)
             val (title, text) = if (isUninstall) {
                 setTimeoutAfter(SUCCESS_TIMEOUT)
-                setSmallIcon(R.drawable.ic_delete)
+                setSmallIcon(NotificationIconHelper.getNotificationIcon(this@createInstallNotification, R.drawable.ic_delete))
                 getString(R.string.uninstalled_application) to
                     getString(R.string.uninstalled_application_DESC, appName)
             } else {
                 when (state) {
                     InstallState.Failed -> {
-                        setSmallIcon(R.drawable.ic_bug_report)
+                        setSmallIcon(NotificationIconHelper.getNotificationIcon(this@createInstallNotification, R.drawable.ic_bug_report))
                         getString(R.string.installation_failed) to
                             getString(R.string.installation_failed_DESC, appName)
                     }
 
                     InstallState.Pending -> {
-                        setSmallIcon(R.drawable.ic_download)
+                        setSmallIcon(NotificationIconHelper.getNotificationIcon(this@createInstallNotification, R.drawable.ic_download))
                         getString(R.string.downloaded_FORMAT, appName) to
                             getString(R.string.tap_to_install_DESC)
                     }
 
                     InstallState.Installing -> {
-                        setSmallIcon(R.drawable.ic_download)
+                        setSmallIcon(NotificationIconHelper.getNotificationIcon(this@createInstallNotification, R.drawable.ic_download))
                         setProgress(-1, -1, true)
                         getString(R.string.installing) to
                             appName
@@ -73,7 +74,7 @@ fun Context.createInstallNotification(
 
                     InstallState.Installed -> {
                         setTimeoutAfter(SUCCESS_TIMEOUT)
-                        setSmallIcon(R.drawable.ic_check)
+                        setSmallIcon(NotificationIconHelper.getNotificationIcon(this@createInstallNotification, R.drawable.ic_check))
                         getString(R.string.installed) to
                             appName
                     }

@@ -220,6 +220,15 @@ fun SettingsScreen(
                 )
             }
 
+            item(key = "setting_alternative_notification_icon") {
+                SwitchSettingItem(
+                    title = stringResource(R.string.alternative_notification_icon),
+                    description = stringResource(R.string.alternative_notification_icon_summary),
+                    checked = settings.alternativeNotificationIcon,
+                    onCheckedChange = viewModel::setAlternativeNotificationIcon,
+                )
+            }
+
             item(key = "setting_unstable_updates") {
                 SwitchSettingItem(
                     title = stringResource(R.string.unstable_updates),
