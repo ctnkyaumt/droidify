@@ -40,6 +40,7 @@ data class Settings(
     val autoSync: AutoSync = AutoSync.WIFI_ONLY,
     val autoSyncInterval: Duration = 12.hours,
     val sortOrder: SortOrder = SortOrder.UPDATED,
+    val favouritesSortOrder: SortOrder = SortOrder.NAME,
     val startupTab: StartupTab = StartupTab.AVAILABLE,
     val isoDateFormat: Boolean = false,
     val proxy: ProxyPreference = ProxyPreference(),

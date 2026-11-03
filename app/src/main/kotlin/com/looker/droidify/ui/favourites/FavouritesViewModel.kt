@@ -1,7 +1,7 @@
 package com.looker.droidify.ui.favourites
 
 import android.content.Context
-import androidx.core.content.edit
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.looker.droidify.database.Database
@@ -13,7 +13,6 @@ import com.looker.droidify.model.ProductItem
 import com.looker.droidify.utility.common.extension.asStateFlow
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
@@ -28,19 +27,31 @@ class FavouritesViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
-    private val preferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+    init {
+        val oldPrefs = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+        if (oldPrefs.contains(KEY_SORT_ORDER)) {
+            val oldSortOrderName = oldPrefs.getString(KEY_SORT_ORDER, null)
+            val oldSortOrder = supportedSortOrders().find { it.name == oldSortOrderName }
+            if (oldSortOrder != null) {
+                viewModelScope.launch {
+                    settingsRepository.setFavouritesSortOrder(oldSortOrder)
+                }
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                context.deleteSharedPreferences(PREFERENCES_NAME)
+            } else {
+                oldPrefs.edit().clear().apply()
+            }
+        }
+    }
 
-    private val mutableSortOrder = MutableStateFlow(
-        preferences.getString(KEY_SORT_ORDER, null)
-            ?.let { name -> supportedSortOrders().find { it.name == name } }
-            ?: SortOrder.NAME,
-    )
-    val sortOrder: StateFlow<SortOrder> = mutableSortOrder
+    val sortOrder: StateFlow<SortOrder> =
+        settingsRepository.get { favouritesSortOrder }.asStateFlow(SortOrder.NAME)
 
     val favouriteApps: StateFlow<List<ProductItem>> =
         combine(
             settingsRepository.get { favouriteApps },
-            mutableSortOrder,
+            settingsRepository.get { favouritesSortOrder },
         ) { favourites, sortOrder ->
             favourites.mapNotNull { app ->
                 val products = Database.ProductAdapter.get(app, null)
@@ -61,8 +72,9 @@ class FavouritesViewModel @Inject constructor(
         }.asStateFlow(emptyList())
 
     fun setSortOrder(sortOrder: SortOrder) {
-        preferences.edit { putString(KEY_SORT_ORDER, sortOrder.name) }
-        mutableSortOrder.value = sortOrder
+        viewModelScope.launch {
+            settingsRepository.setFavouritesSortOrder(sortOrder)
+        }
     }
 
     fun addFavourites(packageNames: Collection<String>) {

@@ -52,6 +52,8 @@ interface SettingsRepository {
 
     suspend fun setSortOrder(sortOrder: SortOrder)
 
+    suspend fun setFavouritesSortOrder(sortOrder: SortOrder)
+
     suspend fun setStartupTab(tab: StartupTab)
 
     suspend fun setIsoDateFormat(enable: Boolean)

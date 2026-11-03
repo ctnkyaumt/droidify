@@ -136,6 +136,9 @@ class PreferenceSettingsRepository(
     override suspend fun setSortOrder(sortOrder: SortOrder) =
         SORT_ORDER.update(sortOrder.name)
 
+    override suspend fun setFavouritesSortOrder(sortOrder: SortOrder) =
+        FAVOURITES_SORT_ORDER.update(sortOrder.name)
+
     override suspend fun setStartupTab(tab: StartupTab) =
         STARTUP_TAB.update(tab.name)
 
@@ -254,6 +257,9 @@ class PreferenceSettingsRepository(
         val autoSync = AutoSync.valueOf(preferences[AUTO_SYNC] ?: AutoSync.WIFI_ONLY.name)
         val autoSyncInterval = preferences[AUTO_SYNC_INTERVAL]?.hours ?: 12L.hours
         val sortOrder = SortOrder.valueOf(preferences[SORT_ORDER] ?: SortOrder.UPDATED.name)
+        val favouritesSortOrder = runCatching {
+            SortOrder.valueOf(preferences[FAVOURITES_SORT_ORDER] ?: SortOrder.NAME.name)
+        }.getOrDefault(SortOrder.NAME)
         val startupTab = StartupTab.valueOf(preferences[STARTUP_TAB] ?: StartupTab.AVAILABLE.name)
         val isoDateFormat = preferences[ISO_DATE_FORMAT] ?: false
         DateFormatter.useIso8601 = isoDateFormat
@@ -290,6 +296,7 @@ class PreferenceSettingsRepository(
             autoSync = autoSync,
             autoSyncInterval = autoSyncInterval,
             sortOrder = sortOrder,
+            favouritesSortOrder = favouritesSortOrder,
             startupTab = startupTab,
             isoDateFormat = isoDateFormat,
             proxy = proxy,
@@ -349,6 +356,7 @@ class PreferenceSettingsRepository(
         val AUTO_SYNC = stringPreferencesKey("key_auto_sync")
         val AUTO_SYNC_INTERVAL = longPreferencesKey("key_auto_sync_interval")
         val SORT_ORDER = stringPreferencesKey("key_sort_order")
+        val FAVOURITES_SORT_ORDER = stringPreferencesKey("key_favourites_sort_order")
         val STARTUP_TAB = stringPreferencesKey("key_startup_tab")
         val PROXY_TYPE = stringPreferencesKey("key_proxy_type")
 
@@ -389,6 +397,7 @@ class PreferenceSettingsRepository(
             set(AUTO_SYNC, settings.autoSync.name)
             set(AUTO_SYNC_INTERVAL, settings.autoSyncInterval.inWholeHours)
             set(SORT_ORDER, settings.sortOrder.name)
+            set(FAVOURITES_SORT_ORDER, settings.favouritesSortOrder.name)
             set(STARTUP_TAB, settings.startupTab.name)
             set(ISO_DATE_FORMAT, settings.isoDateFormat)
             set(PROXY_TYPE, settings.proxy.type.name)

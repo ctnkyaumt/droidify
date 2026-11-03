@@ -109,6 +109,15 @@ class PreferenceSettingsRepositoryTest {
     }
 
     @Test
+    fun `setFavouritesSortOrder updates favourites sort order`() = runTest {
+        assertEquals(SortOrder.NAME, repository.getInitial().favouritesSortOrder)
+        repository.setFavouritesSortOrder(SortOrder.UPDATED)
+        assertEquals(SortOrder.UPDATED, repository.getInitial().favouritesSortOrder)
+        repository.setFavouritesSortOrder(SortOrder.ADDED)
+        assertEquals(SortOrder.ADDED, repository.getInitial().favouritesSortOrder)
+    }
+
+    @Test
     fun `setRepoEnabled manages enabled repos`() = runTest {
         repository.setRepoEnabled(1, true)
         repository.setRepoEnabled(2, true)
