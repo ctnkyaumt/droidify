@@ -139,7 +139,7 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
                 add(0, action.id, 0, action.adapterAction.titleResId)
                     .setIcon(toolbar.context.getMutatedIcon(action.adapterAction.iconResId))
                     .setVisible(false)
-                    .setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_ALWAYS)
+                    .setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_IF_ROOM)
                     .setOnMenuItemClickListener {
                         onActionClick(action.adapterAction)
                         true
@@ -361,9 +361,6 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
         val displayActions = actions.updateAsMutable {
             if (isActionVisible && primaryAction != null) {
                 remove(primaryAction)
-            }
-            if (size >= 4 && resources.configuration.screenWidthDp < 400) {
-                remove(Action.DETAILS)
             }
         }
         Action.entries.forEach { action ->
