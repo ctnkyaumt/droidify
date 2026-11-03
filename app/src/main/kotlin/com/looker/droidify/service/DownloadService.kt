@@ -112,23 +112,13 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
 
     private val _downloadState = MutableStateFlow(DownloadState())
 
-    private class Task(
-        val packageName: String,
-        val name: String,
-        val release: Release,
-        val url: String,
-        val authentication: String,
-        val isUpdate: Boolean = false,
-    ) {
-        val notificationTag: String
-            get() = "download-$packageName"
-    }
+    private typealias Task = DownloadTask
 
     private data class CurrentTask(val task: Task, val lastState: State, val job: Job? = null)
 
     private var started = false
     private var foregroundFailed = false
-    private val tasks = mutableListOf<Task>()
+    private val downloadQueue = DownloadQueue()
     private var currentTask: CurrentTask? = null
 
     private val lock = Mutex()
@@ -142,25 +132,25 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
             release: Release,
             isUpdate: Boolean = false,
         ) {
-            val task = Task(
+            val task = DownloadTask(
                 packageName = packageName,
                 name = name,
+                repository = repository,
                 release = release,
-                url = release.getDownloadUrl(repository),
-                authentication = repository.authentication,
                 isUpdate = isUpdate,
             )
             if (Cache.getReleaseFile(this@DownloadService, release.cacheFileName).exists()) {
                 lifecycleScope.launch { publishSuccess(task) }
                 return
             }
-            cancelTasks(packageName)
-            cancelCurrentTask(packageName)
+            if (!downloadQueue.enqueue(task)) {
+                // Already queued or downloading; ignore duplicate
+                return
+            }
             notificationManager?.cancel(
                 task.notificationTag,
                 Constants.NOTIFICATION_ID_DOWNLOADING,
             )
-            tasks += task
             if (currentTask == null) {
                 handleDownload()
             } else {
@@ -232,11 +222,11 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
     }
 
     private fun cancelTasks(packageName: String?) {
-        tasks.removeAll {
-            (packageName == null || it.packageName == packageName) && run {
-                updateCurrentState(State.Cancel(it.packageName))
-                true
-            }
+        val removed = downloadQueue.cancel(packageName)
+        if (removed && packageName != null) {
+            updateCurrentState(State.Cancel(packageName))
+        } else if (removed && packageName == null) {
+            updateCurrentState(State.Idle)
         }
     }
 
@@ -244,6 +234,7 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
         currentTask?.let {
             if (packageName == null || it.task.packageName == packageName) {
                 it.job?.cancel()
+                downloadQueue.completeActive(it.task.packageName)
                 currentTask = null
                 updateCurrentState(State.Cancel(it.task.packageName))
             }
@@ -308,6 +299,7 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
         showNotificationInstall(task)
         if (currentInstaller == InstallerType.ROOT ||
             currentInstaller == InstallerType.SHIZUKU ||
+            currentInstaller == InstallerType.SESSION ||
             autoInstallWithSessionInstaller
         ) {
             val installItem = InstallItem(
@@ -411,12 +403,12 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
             started = true
             startServiceCompat()
         }
-        if (tasks.isEmpty()) {
+        val task = downloadQueue.poll()
+        if (task == null) {
             if (started) started = false
             stopForegroundCompat()
             return
         }
-        val task = tasks.removeAt(0)
         val connectionState = State.Connecting(task.packageName)
         currentTask = CurrentTask(task, connectionState)
         with(stateNotificationBuilder) {
@@ -491,6 +483,7 @@ class DownloadService : ConnectionService<DownloadService.Binder>() {
                 }
             }
         } finally {
+            downloadQueue.completeActive(task.packageName)
             lock.withLock { currentTask = null }
             handleDownload()
         }

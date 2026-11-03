@@ -465,7 +465,12 @@ class TabsFragment : ScreenFragment() {
 
     internal fun selectUpdates() = selectUpdatesInternal(true)
 
+    private var lastUpdateAllClickTime = 0L
+
     internal fun updateAll() {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (now - lastUpdateAllClickTime < 1500L) return
+        lastUpdateAllClickTime = now
         lifecycleScope.launch { syncConnection.binder?.updateAllApps() }
     }
 

@@ -23,8 +23,17 @@ class DownloadQueue {
     var activeTask: DownloadTask? = null
         private set
 
-    // Stub / Old behaviour: blindly adds tasks without checking for active or pending duplicates
+    /**
+     * Enqueue a task if not already active or pending for this package.
+     * Returns true if enqueued, false if ignored as a duplicate.
+     */
     fun enqueue(task: DownloadTask): Boolean {
+        if (activeTask?.packageName == task.packageName) {
+            return false
+        }
+        if (pendingTasks.any { it.packageName == task.packageName }) {
+            return false
+        }
         pendingTasks.add(task)
         return true
     }

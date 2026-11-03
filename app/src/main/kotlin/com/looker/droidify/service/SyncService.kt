@@ -191,10 +191,18 @@ class SyncService : ConnectionService<SyncService.Binder>() {
             }
         }
 
+        private var updatingAll = false
+
         suspend fun updateAllApps() = withContext(Dispatchers.IO) {
-            val skipSignature = settingsRepository.getInitial().ignoreSignature
-            val updates = Database.ProductAdapter.getUpdates(skipSignature)
-            updateAllAppsInternal(updates)
+            if (updatingAll) return@withContext
+            updatingAll = true
+            try {
+                val skipSignature = settingsRepository.getInitial().ignoreSignature
+                val updates = Database.ProductAdapter.getUpdates(skipSignature)
+                updateAllAppsInternal(updates)
+            } finally {
+                updatingAll = false
+            }
         }
 
         fun setUpdateNotificationBlocker(fragment: Fragment?) {
