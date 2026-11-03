@@ -6,17 +6,24 @@ import java.nio.ByteOrder
 /**
  * Minimal parser for `resources.arsc` that resolves a resource ID to file paths
  * across device configurations (densities).
+ *
+ * The table is read lazily through a [RangeReader]: only the table and string pool headers,
+ * the chunk headers of the package and the entry of the requested resource are fetched,
+ * so a huge table does not need to be downloaded to find one icon.
  */
-class ArscParser(private val bytes: ByteArray) {
-
-    private val buffer: ByteBuffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
-    private val globalStrings: List<String?>
-    private val packages = mutableListOf<PackageChunk>()
+class ArscParser private constructor(
+    private val source: RangeReader,
+    private val packages: List<PackageChunk>,
+    private val stringCount: Int,
+    private val stringPoolHeaderSize: Int,
+    private val stringsStart: Int,
+    private val utf8Strings: Boolean,
+) {
 
     private class PackageChunk(
         val id: Int,
-        val offset: Int,
-        val size: Int,
+        val offset: Long,
+        val size: Long,
     )
 
     data class Candidate(
@@ -29,9 +36,17 @@ class ArscParser(private val bytes: ByteArray) {
         private const val RES_STRING_POOL_TYPE = 0x0001
         private const val RES_TABLE_PACKAGE_TYPE = 0x0200
         private const val RES_TABLE_TYPE_TYPE = 0x0201
+        private const val RES_TABLE_TYPE_SPEC_TYPE = 0x0202
 
         private const val TYPE_REFERENCE = 0x01
         private const val TYPE_STRING = 0x03
+
+        private const val TABLE_HEADER_SIZE = 12L
+        private const val STRING_POOL_HEADER_SIZE = 28
+        private const val TYPE_CHUNK_PREFIX_SIZE = 36
+
+        // Enough for any resource path, a longer string is treated as missing
+        private const val STRING_WINDOW = 512
 
         fun rasterDensityScore(density: Int): Int = when (density) {
             0xFFFE, 0xFFFF -> -1 // Exclude anydpi / nodpi from physical raster ranking
@@ -45,36 +60,62 @@ class ArscParser(private val bytes: ByteArray) {
             120 -> 120          // ldpi
             else -> density
         }
-    }
 
-    init {
-        if (bytes.size < 12 || buffer.u16(0) != RES_TABLE_TYPE) {
-            throw ApkProbeException("Invalid resources.arsc header")
-        }
-        val poolType = buffer.u16(12)
-        if (poolType != RES_STRING_POOL_TYPE) {
-            throw ApkProbeException("Expected string pool in resources.arsc at offset 12")
-        }
-        globalStrings = AxmlManifestParser.readStringPool(buffer, bytes, 12)
-        val poolChunkSize = buffer.getInt(12 + 4)
-        if (poolChunkSize < 8 || 12 + poolChunkSize > bytes.size) {
-            throw ApkProbeException("Invalid string pool chunk size in resources.arsc")
-        }
-
-        var pos = 12 + poolChunkSize
-        while (pos + 8 <= bytes.size) {
-            val chunkType = buffer.u16(pos)
-            val chunkSize = buffer.getInt(pos + 4)
-            if (chunkSize < 8 || chunkSize > bytes.size - pos) break
-            if (chunkType == RES_TABLE_PACKAGE_TYPE && pos + 12 <= bytes.size) {
-                val pkgId = buffer.getInt(pos + 8) and 0xFF
-                packages.add(PackageChunk(pkgId, pos, chunkSize))
+        suspend fun create(source: RangeReader): ArscParser {
+            val size = source.size
+            if (size < TABLE_HEADER_SIZE + STRING_POOL_HEADER_SIZE ||
+                source.readBuffer(0, 4).u16(0) != RES_TABLE_TYPE
+            ) {
+                throw ApkProbeException("Invalid resources.arsc header")
             }
-            pos += chunkSize
+            val pool = source.readBuffer(TABLE_HEADER_SIZE, STRING_POOL_HEADER_SIZE)
+            if (pool.u16(0) != RES_STRING_POOL_TYPE) {
+                throw ApkProbeException("Expected string pool in resources.arsc at offset 12")
+            }
+            val poolHeaderSize = pool.u16(2)
+            val poolChunkSize = pool.getInt(4)
+            val stringCount = pool.getInt(8)
+            val flags = pool.getInt(16)
+            val stringsStart = pool.getInt(20)
+            if (poolChunkSize < 8 || TABLE_HEADER_SIZE + poolChunkSize > size) {
+                throw ApkProbeException("Invalid string pool chunk size in resources.arsc")
+            }
+            if (stringCount < 0 || TABLE_HEADER_SIZE + poolHeaderSize + stringCount * 4L > size) {
+                throw ApkProbeException("Invalid string pool")
+            }
+
+            val packages = mutableListOf<PackageChunk>()
+            var pos = TABLE_HEADER_SIZE + poolChunkSize
+            while (pos + 8 <= size) {
+                val header = source.readBuffer(pos, 8)
+                val chunkType = header.u16(0)
+                val chunkSize = header.getInt(4)
+                if (chunkSize < 8 || chunkSize > size - pos) break
+                if (chunkType == RES_TABLE_PACKAGE_TYPE && pos + 12 <= size) {
+                    val pkgId = source.readBuffer(pos + 8, 4).getInt(0) and 0xFF
+                    packages.add(PackageChunk(pkgId, pos, chunkSize.toLong()))
+                }
+                pos += chunkSize
+            }
+            return ArscParser(
+                source = source,
+                packages = packages,
+                stringCount = stringCount,
+                stringPoolHeaderSize = poolHeaderSize,
+                stringsStart = stringsStart,
+                utf8Strings = flags and AxmlManifestParser.UTF8_FLAG != 0,
+            )
         }
+
+        private suspend fun RangeReader.readBuffer(offset: Long, length: Int): ByteBuffer {
+            val bytes = with(ApkManifestReader) { readExactly(offset, length) }
+            return ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+        }
+
+        private fun ByteBuffer.u16(offset: Int): Int = getShort(offset).toInt() and 0xFFFF
     }
 
-    fun resolveResId(resId: Int, maxDepth: Int = 3): List<Candidate> {
+    suspend fun resolveResId(resId: Int, maxDepth: Int = 3): List<Candidate> {
         if (resId == 0 || maxDepth <= 0) return emptyList()
         val targetPkg = (resId ushr 24) and 0xFF
         val targetType = (resId ushr 16) and 0xFF
@@ -83,50 +124,27 @@ class ArscParser(private val bytes: ByteArray) {
         val candidates = mutableListOf<Candidate>()
         for (pkg in packages) {
             if (targetPkg != 0 && pkg.id != targetPkg) continue
-            val headerSize = buffer.u16(pkg.offset + 2)
+            val headerSize = source.readBuffer(pkg.offset, 4).u16(2)
             var subPos = pkg.offset + headerSize
             val pkgEnd = pkg.offset + pkg.size
-            while (subPos + 8 <= pkgEnd && subPos + 8 <= bytes.size) {
-                val chunkType = buffer.u16(subPos)
-                val chunkHeaderSize = buffer.u16(subPos + 2)
-                val chunkSize = buffer.getInt(subPos + 4)
+            var seenTargetType = false
+            while (subPos + 8 <= pkgEnd) {
+                val header = source.readBuffer(subPos, 8)
+                val chunkType = header.u16(0)
+                val chunkHeaderSize = header.u16(2)
+                val chunkSize = header.getInt(4)
                 if (chunkSize < 8 || chunkSize > pkgEnd - subPos) break
-                if (chunkType == RES_TABLE_TYPE_TYPE && subPos + 20 <= bytes.size) {
-                    val typeId = bytes[subPos + 8].toInt() and 0xFF
+                if ((chunkType == RES_TABLE_TYPE_TYPE || chunkType == RES_TABLE_TYPE_SPEC_TYPE) && chunkSize >= 12) {
+                    val prefix = source.readBuffer(subPos, minOf(chunkSize, TYPE_CHUNK_PREFIX_SIZE))
+                    val typeId = prefix.get(8).toInt() and 0xFF
                     if (typeId == targetType) {
-                        val entryCount = buffer.getInt(subPos + 12)
-                        val entriesStart = buffer.getInt(subPos + 16)
-                        val density = if (subPos + 36 <= bytes.size) {
-                            buffer.u16(subPos + 34)
-                        } else {
-                            0
+                        seenTargetType = true
+                        if (chunkType == RES_TABLE_TYPE_TYPE) {
+                            addEntryCandidates(subPos, chunkHeaderSize, prefix, targetEntry, resId, maxDepth, candidates)
                         }
-                        if (targetEntry in 0 until entryCount) {
-                            val offsetPos = subPos + chunkHeaderSize + targetEntry * 4
-                            if (offsetPos + 4 <= bytes.size) {
-                                val entryOffset = buffer.getInt(offsetPos)
-                                if (entryOffset != -1) {
-                                    val entryPos = subPos + entriesStart + entryOffset
-                                    if (entryPos + 8 <= bytes.size) {
-                                        val entrySize = buffer.u16(entryPos)
-                                        val flags = buffer.u16(entryPos + 2)
-                                        // Simple entry (not complex/bag)
-                                        if ((flags and 0x0001) == 0 && entryPos + entrySize + 8 <= bytes.size) {
-                                            val valType = bytes[entryPos + entrySize + 3].toInt() and 0xFF
-                                            val valData = buffer.getInt(entryPos + entrySize + 4)
-                                            if (valType == TYPE_STRING) {
-                                                val str = globalStrings.getOrNull(valData)
-                                                if (!str.isNullOrBlank()) {
-                                                    candidates.add(Candidate(density, str))
-                                                }
-                                            } else if (valType == TYPE_REFERENCE && valData != 0 && valData != resId) {
-                                                candidates.addAll(resolveResId(valData, maxDepth - 1))
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                    } else if (seenTargetType) {
+                        // Chunks are grouped by type id, nothing of the target type follows
+                        break
                     }
                 }
                 subPos += chunkSize
@@ -135,5 +153,137 @@ class ArscParser(private val bytes: ByteArray) {
         return candidates
     }
 
-    private fun ByteBuffer.u16(offset: Int): Int = getShort(offset).toInt() and 0xFFFF
+    private suspend fun addEntryCandidates(
+        chunkPos: Long,
+        chunkHeaderSize: Int,
+        prefix: ByteBuffer,
+        targetEntry: Int,
+        resId: Int,
+        maxDepth: Int,
+        candidates: MutableList<Candidate>,
+    ) {
+        if (prefix.limit() < 20) return
+        val entryCount = prefix.getInt(12)
+        val entriesStart = prefix.getInt(16)
+        val density = if (prefix.limit() >= 36) prefix.u16(34) else 0
+        if (targetEntry !in 0 until entryCount) return
+
+        val offsetPos = chunkPos + chunkHeaderSize + targetEntry * 4L
+        if (offsetPos + 4 > source.size) return
+        val entryOffset = source.readBuffer(offsetPos, 4).getInt(0)
+        if (entryOffset == -1) return
+
+        val entryPos = chunkPos + entriesStart + entryOffset
+        if (entryPos < 0 || entryPos + 8 > source.size) return
+        val entry = source.readBuffer(entryPos, 8)
+        val entrySize = entry.u16(0)
+        val flags = entry.u16(2)
+        // Simple entry (not complex/bag)
+        if ((flags and 0x0001) != 0) return
+
+        val valuePos = entryPos + entrySize
+        if (valuePos + 8 > source.size) return
+        val value = source.readBuffer(valuePos, 8)
+        val valType = value.get(3).toInt() and 0xFF
+        val valData = value.getInt(4)
+        if (valType == TYPE_STRING) {
+            val str = readString(valData)
+            if (!str.isNullOrBlank()) {
+                candidates.add(Candidate(density, str))
+            }
+        } else if (valType == TYPE_REFERENCE && valData != 0 && valData != resId) {
+            candidates.addAll(resolveResId(valData, maxDepth - 1))
+        }
+    }
+
+    private suspend fun readString(index: Int): String? {
+        if (index < 0 || index >= stringCount) return null
+        val offset = source.readBuffer(TABLE_HEADER_SIZE + stringPoolHeaderSize + index * 4L, 4).getInt(0)
+        val start = TABLE_HEADER_SIZE + stringsStart + offset
+        if (start < 0 || start >= source.size) return null
+        val window = with(ApkManifestReader) {
+            source.readExactly(start, minOf(STRING_WINDOW.toLong(), source.size - start).toInt())
+        }
+        return try {
+            AxmlManifestParser.readPoolString(window, 0, utf8Strings)
+        } catch (_: IndexOutOfBoundsException) {
+            null
+        }
+    }
+
 }
+
+/**
+ * A [RangeReader] over an in-memory byte array.
+ */
+class ByteArrayRangeReader(private val bytes: ByteArray) : RangeReader {
+    override val size: Long = bytes.size.toLong()
+
+    override suspend fun read(offset: Long, length: Int): ByteArray {
+        if (offset < 0 || length < 0 || offset + length > bytes.size) {
+            throw ApkProbeException("Read of $length bytes at $offset out of bounds")
+        }
+        return bytes.copyOfRange(offset.toInt(), offset.toInt() + length)
+    }
+}
+
+/**
+ * The window of [size] bytes at [baseOffset] of [reader] (e.g. a stored ZIP entry), fetched in
+ * blocks of [blockSize] bytes and kept in a small LRU cache. Gives up with
+ * [FetchBudgetExceededException] once more than [maxFetchedBytes] have been fetched in total.
+ */
+class BlockCachedRangeReader(
+    private val reader: RangeReader,
+    private val baseOffset: Long,
+    override val size: Long,
+    private val maxFetchedBytes: Long,
+    private val blockSize: Int = DEFAULT_BLOCK_SIZE,
+    private val maxBlocks: Int = DEFAULT_MAX_BLOCKS,
+) : RangeReader {
+
+    companion object {
+        const val DEFAULT_BLOCK_SIZE = 64 * 1024
+        const val DEFAULT_MAX_BLOCKS = 64
+    }
+
+    private val blocks = object : LinkedHashMap<Long, ByteArray>(16, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, ByteArray>): Boolean =
+            this.size > maxBlocks
+    }
+
+    var fetchedBytes = 0L
+        private set
+
+    override suspend fun read(offset: Long, length: Int): ByteArray {
+        if (offset < 0 || length < 0 || offset + length > size) {
+            throw ApkProbeException("Read of $length bytes at $offset out of bounds")
+        }
+        val result = ByteArray(length)
+        var done = 0
+        while (done < length) {
+            val position = offset + done
+            val index = position / blockSize
+            val block = block(index)
+            val inBlock = (position - index * blockSize).toInt()
+            val count = minOf(length - done, block.size - inBlock)
+            System.arraycopy(block, inBlock, result, done, count)
+            done += count
+        }
+        return result
+    }
+
+    private suspend fun block(index: Long): ByteArray {
+        blocks[index]?.let { return it }
+        val start = index * blockSize
+        val length = minOf(blockSize.toLong(), size - start).toInt()
+        if (fetchedBytes + length > maxFetchedBytes) {
+            throw FetchBudgetExceededException("Fetched more than $maxFetchedBytes bytes")
+        }
+        val data = with(ApkManifestReader) { reader.readExactly(baseOffset + start, length) }
+        fetchedBytes += length
+        blocks[index] = data
+        return data
+    }
+}
+
+class FetchBudgetExceededException(message: String) : Exception(message)

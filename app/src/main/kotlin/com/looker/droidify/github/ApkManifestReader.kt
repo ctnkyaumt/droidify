@@ -55,8 +55,8 @@ object ApkManifestReader {
     private const val ZIP64_EXTRA_ID = 0x0001
     private const val MASK_32 = 0xFFFFFFFFL
 
-    private const val METHOD_STORED = 0
-    private const val METHOD_DEFLATED = 8
+    internal const val METHOD_STORED = 0
+    internal const val METHOD_DEFLATED = 8
 
     private const val MAX_CENTRAL_DIRECTORY_SIZE = 32L * 1024 * 1024
     const val MAX_MANIFEST_SIZE = 8L * 1024 * 1024
@@ -240,6 +240,21 @@ object ApkManifestReader {
         }
     }
 
+    /**
+     * Absolute offset of the data of [entry] in the file. Reads the local file header, since
+     * its extra field can differ from the central directory one.
+     */
+    suspend fun readDataOffset(reader: RangeReader, entry: ZipEntry): Long {
+        if (entry.localHeaderOffset < 0 || entry.localHeaderOffset + LOCAL_HEADER_SIZE > reader.size) {
+            throw ApkProbeException("Invalid local header offset")
+        }
+        val local = reader.readExactly(entry.localHeaderOffset, LOCAL_HEADER_SIZE)
+        if (local.u32(0) != LOCAL_HEADER_SIGNATURE) {
+            throw ApkProbeException("Invalid local file header")
+        }
+        return entry.localHeaderOffset + LOCAL_HEADER_SIZE + local.u16(26) + local.u16(28)
+    }
+
     fun inflate(data: ByteArray, size: Int, entryName: String = "entry"): ByteArray {
         val inflater = Inflater(true)
         try {
@@ -301,7 +316,7 @@ internal object AxmlManifestParser {
     private const val RES_XML_START_ELEMENT_TYPE = 0x0102
     private const val RES_XML_END_ELEMENT_TYPE = 0x0103
 
-    private const val UTF8_FLAG = 0x100
+    internal const val UTF8_FLAG = 0x100
 
     private const val TYPE_STRING = 0x03
     private const val TYPE_FIRST_INT = 0x10
@@ -467,6 +482,14 @@ internal object AxmlManifestParser {
             }
         }
     }
+
+    /** Reads the string at [start] of [bytes], a window into the data of a string pool. */
+    internal fun readPoolString(bytes: ByteArray, start: Int, utf8: Boolean): String =
+        if (utf8) {
+            readUtf8(bytes, start)
+        } else {
+            readUtf16(ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN), bytes, start)
+        }
 
     private fun readUtf8(bytes: ByteArray, start: Int): String {
         var position = start

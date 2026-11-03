@@ -2,7 +2,11 @@ package com.looker.droidify.github
 
 object ApkIconResolver {
 
-    const val MAX_ARSC_SIZE = 48L * 1024 * 1024
+    // Deflated resources.arsc has to be inflated as a whole, larger ones are not worth it
+    const val MAX_DEFLATED_ARSC_SIZE = 4L * 1024 * 1024
+
+    // Stored resources.arsc is read in blocks, give up after fetching this much
+    const val MAX_ARSC_FETCH_SIZE = 4L * 1024 * 1024
     const val MAX_XML_SIZE = 2L * 1024 * 1024
     const val MAX_ICON_SIZE = 5L * 1024 * 1024
 
@@ -16,18 +20,22 @@ object ApkIconResolver {
         reader: RangeReader,
         iconResId: Int,
         roundIconResId: Int = 0,
+        arscBlockSize: Int = BlockCachedRangeReader.DEFAULT_BLOCK_SIZE,
     ): ResolvedIcon? {
         val cd = ApkManifestReader.readCentralDirectory(reader)
         val arscEntry = ApkManifestReader.findEntry(cd, "resources.arsc") ?: return null
-        if (arscEntry.uncompressedSize > MAX_ARSC_SIZE || arscEntry.compressedSize > MAX_ARSC_SIZE) {
-            return null
+        val arsc = openArsc(reader, arscEntry, arscBlockSize) ?: return null
+
+        // Giving up on a table which is too expensive to read means no icon
+        suspend fun resolveResId(resId: Int): List<ArscParser.Candidate> = try {
+            arsc.resolveResId(resId)
+        } catch (_: FetchBudgetExceededException) {
+            emptyList()
         }
-        val arscBytes = ApkManifestReader.readEntry(reader, arscEntry, MAX_ARSC_SIZE)
-        val arsc = ArscParser(arscBytes)
 
         suspend fun findRaster(resId: Int): ResolvedIcon? {
             if (resId == 0) return null
-            val candidates = arsc.resolveResId(resId)
+            val candidates = resolveResId(resId)
 
             // Try non-.xml candidates from highest density down
             val nonXml = candidates
@@ -57,7 +65,7 @@ object ApkIconResolver {
                 when (val fg = AdaptiveIconXmlParser.parseForeground(xmlBytes)) {
                     is AdaptiveIconXmlParser.ForegroundResult.Reference -> {
                         if (fg.resId != resId) {
-                            val fgCandidates = arsc.resolveResId(fg.resId)
+                            val fgCandidates = resolveResId(fg.resId)
                             val fgNonXml = fgCandidates
                                 .filterNot { it.path.endsWith(".xml", ignoreCase = true) }
                                 .sortedByDescending { ArscParser.rasterDensityScore(it.density) }
@@ -91,6 +99,42 @@ object ApkIconResolver {
 
         return findRaster(iconResId)
             ?: (if (roundIconResId != 0 && roundIconResId != iconResId) findRaster(roundIconResId) else null)
+    }
+
+    private suspend fun openArsc(
+        reader: RangeReader,
+        entry: ApkManifestReader.ZipEntry,
+        blockSize: Int,
+    ): ArscParser? = when (entry.method) {
+        ApkManifestReader.METHOD_STORED -> {
+            val dataOffset = ApkManifestReader.readDataOffset(reader, entry)
+            if (dataOffset + entry.uncompressedSize > reader.size) {
+                throw ApkProbeException("resources.arsc exceeds the file size")
+            }
+            try {
+                ArscParser.create(
+                    BlockCachedRangeReader(
+                        reader = reader,
+                        baseOffset = dataOffset,
+                        size = entry.uncompressedSize,
+                        maxFetchedBytes = MAX_ARSC_FETCH_SIZE,
+                        blockSize = blockSize,
+                    ),
+                )
+            } catch (_: FetchBudgetExceededException) {
+                null
+            }
+        }
+        ApkManifestReader.METHOD_DEFLATED -> {
+            if (entry.uncompressedSize > MAX_DEFLATED_ARSC_SIZE || entry.compressedSize > MAX_DEFLATED_ARSC_SIZE) {
+                null
+            } else {
+                ArscParser.create(
+                    ByteArrayRangeReader(ApkManifestReader.readEntry(reader, entry, MAX_DEFLATED_ARSC_SIZE)),
+                )
+            }
+        }
+        else -> null
     }
 
     suspend fun resolveIconPath(
