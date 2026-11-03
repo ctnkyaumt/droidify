@@ -3,6 +3,7 @@ package com.looker.droidify.utility.extension
 import com.looker.droidify.model.InstalledItem
 import com.looker.droidify.model.Product
 import com.looker.droidify.model.Repository
+import com.looker.droidify.model.UpdateResolver
 import com.looker.droidify.model.findSuggested
 import com.looker.droidify.service.Connection
 import com.looker.droidify.service.DownloadService
@@ -17,15 +18,17 @@ fun Connection<DownloadService.Binder, DownloadService>.startUpdate(
 
     val (product, repository) = products.findSuggested(installedItem) ?: return
 
-    val compatibleReleases = product.selectedReleases
-        .filter { installedItem == null || installedItem.signature == it.signature }
-        .ifEmpty { return }
+    val selectedRelease = UpdateResolver.findSuggestedRelease(
+        releases = product.releases,
+        installedItem = installedItem,
+        primaryPlatform = Android.primaryPlatform,
+    ) ?: return
 
-    val selectedRelease = compatibleReleases.singleOrNull() ?: compatibleReleases.run {
-        filter { Android.primaryPlatform in it.platforms }.minByOrNull { it.platforms.size }
-            ?: minByOrNull { it.platforms.size }
-            ?: firstOrNull()
-    } ?: return
+    if (installedItem != null &&
+        !UpdateResolver.isSignatureCompatible(installedItem.signatures, selectedRelease.signature)
+    ) {
+        return
+    }
 
     requireNotNull(binder).enqueue(
         packageName = packageName,

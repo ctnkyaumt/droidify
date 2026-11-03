@@ -33,6 +33,7 @@ import com.looker.droidify.model.ProductPreference
 import com.looker.droidify.model.Release
 import com.looker.droidify.model.Repository
 import com.looker.droidify.model.findSuggested
+import com.looker.droidify.model.UpdateResolver
 import com.looker.droidify.service.Connection
 import com.looker.droidify.service.DownloadService
 import com.looker.droidify.ui.Message
@@ -247,18 +248,20 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
     ) {
         val installed = installed
         val product = products.findSuggested(installed?.installedItem)?.first
-        val compatible = product != null && product.selectedReleases.firstOrNull()
-            .let { it != null && it.incompatibilities.isEmpty() }
+        val suggestedRelease = product?.let {
+            UpdateResolver.findSuggestedRelease(it.releases, installed?.installedItem, primaryPlatform)
+        } ?: product?.selectedReleases?.firstOrNull()
+        val compatible = suggestedRelease != null && suggestedRelease.incompatibilities.isEmpty()
         val canInstall = product != null && installed == null && compatible
         val canUpdate =
             product != null && compatible && product.canUpdate(installed?.installedItem) &&
-                !preference.shouldIgnoreUpdate(product.versionCode)
+                !preference.shouldIgnoreUpdate(suggestedRelease?.versionCode ?: product.versionCode)
         val canUninstall = product != null && installed != null && !installed.isSystem
         val canLaunch =
             product != null && installed != null && installed.launcherActivities.isNotEmpty()
 
         val incompatibilityReason = if (product != null) {
-            val selectedRelease = product.selectedReleases.firstOrNull()
+            val selectedRelease = suggestedRelease ?: product.selectedReleases.firstOrNull()
             val incompatibility = selectedRelease?.incompatibilities?.firstOrNull()
             val installedItem = installed?.installedItem
 
@@ -286,7 +289,7 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
 
                 installedItem != null
                     && selectedRelease != null
-                    && installedItem.signature != selectedRelease.signature -> {
+                    && !UpdateResolver.isSignatureCompatible(installedItem.signatures, selectedRelease.signature) -> {
                     getString(stringRes.incompatible_signature_DESC)
                 }
 

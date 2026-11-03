@@ -840,7 +840,7 @@ object Database {
             db.transaction {
                 for (product in products) {
                     // Format signatures like ".signature1.signature2." for easier select
-                    val signatures = product.signatures.joinToString { ".$it" }
+                    val signatures = product.signatures.joinToString(separator = "") { ".$it" }
                         .let { if (it.isNotEmpty()) "$it." else "" }
                     db.insertOrReplace(
                         true,
