@@ -7,9 +7,12 @@ import com.looker.droidify.utility.serialization.product
 import com.looker.droidify.utility.serialization.serialize
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 
+@RunWith(RobolectricTestRunner::class)
 class IndexV1TranslationTest {
 
     @Test
@@ -96,7 +99,9 @@ class IndexV1TranslationTest {
         val factory = JsonFactory()
         val stream = ByteArrayOutputStream()
         factory.createGenerator(stream).use { generator ->
+            generator.writeStartObject()
             product.serialize(generator)
+            generator.writeEndObject()
         }
 
         val deserialized = factory.createParser(stream.toByteArray()).use { parser ->

@@ -145,7 +145,9 @@ class CompatibilityTest {
         val factory = JsonFactory()
         val stream = ByteArrayOutputStream()
         factory.createGenerator(stream).use { generator ->
+            generator.writeStartObject()
             release.serialize(generator)
+            generator.writeEndObject()
         }
 
         val deserialized = factory.createParser(stream.toByteArray()).use { parser ->
