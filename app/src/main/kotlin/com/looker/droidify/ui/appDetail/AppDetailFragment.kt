@@ -197,7 +197,6 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
                             suggestedRepo = state.addressIfUnavailable,
                             products = products,
                             rblogs = state.rblogs,
-                            downloads = state.downloads,
                             installedItem = state.installedItem,
                             isFavourite = state.isFavourite,
                             allowIncompatibleVersion = state.allowIncompatibleVersions,

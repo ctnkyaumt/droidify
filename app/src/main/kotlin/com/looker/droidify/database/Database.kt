@@ -8,7 +8,6 @@ import android.os.CancellationSignal
 import androidx.core.database.sqlite.transaction
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
-import com.looker.droidify.data.local.model.DownloadStats
 import com.looker.droidify.data.local.model.RBLog
 import com.looker.droidify.database.table.DatabaseHelper
 import com.looker.droidify.database.table.Table
@@ -206,7 +205,6 @@ object Database {
         data class Repository(val id: Long) : Subject()
         data object Products : Subject()
         data object RBLogs : Subject()
-        data object DownloadStats : Subject()
     }
 
     private val observers = mutableMapOf<Subject, MutableSet<() -> Unit>>()
@@ -982,46 +980,6 @@ object Database {
                 },
                 error = if (cursor.isNull(errorIndex)) null else cursor.getString(errorIndex),
             )
-        }
-    }
-
-    object DownloadStatsAdapter {
-
-        fun totalStream(packageName: String): Flow<Long> = flowOf(Unit)
-            .onCompletion { if (it == null) emitAll(flowCollection(Subject.DownloadStats)) }
-            .map { total(packageName) }
-            .flowOn(Dispatchers.IO)
-
-        fun total(packageName: String): Long {
-            return db.query(
-                Schema.DownloadStats.name,
-                columns = arrayOf("SUM(${Schema.DownloadStats.ROW_DOWNLOADS})"),
-                selection = Pair(
-                    "${Schema.DownloadStats.ROW_PACKAGE_NAME} = ?",
-                    arrayOf(packageName),
-                ),
-            ).use { it.firstOrNull()?.getLong(0) ?: 0L }
-        }
-
-        fun insert(stats: List<DownloadStats>) {
-            db.transaction {
-                for (stat in stats) {
-                    db.insertOrReplace(true, Schema.DownloadStats.name, stat.toContentValues())
-                }
-            }
-            notifyChanged(Subject.DownloadStats)
-        }
-
-        fun deleteAll() {
-            db.delete(Schema.DownloadStats.name, null, null)
-            notifyChanged(Subject.DownloadStats)
-        }
-
-        private fun DownloadStats.toContentValues(): ContentValues = ContentValues().apply {
-            put(Schema.DownloadStats.ROW_PACKAGE_NAME, packageName)
-            put(Schema.DownloadStats.ROW_SOURCE, source)
-            put(Schema.DownloadStats.ROW_TIMESTAMP, timestamp)
-            put(Schema.DownloadStats.ROW_DOWNLOADS, downloads)
         }
     }
 }

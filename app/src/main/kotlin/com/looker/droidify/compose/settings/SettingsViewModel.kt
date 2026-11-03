@@ -194,15 +194,6 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun setDownloadStatisticsEnabled(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsRepository.setDownloadStatisticsEnabled(enabled)
-            if (!enabled) {
-                privacyRepository.clearDownloadStats()
-            }
-        }
-    }
-
     fun setReproducibilityLogsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setRBLogsEnabled(enabled)

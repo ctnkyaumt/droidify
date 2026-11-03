@@ -1,6 +1,5 @@
 package com.looker.droidify.data
 
-import com.looker.droidify.data.local.model.DownloadStats
 import com.looker.droidify.data.local.model.RBLog
 import com.looker.droidify.database.Database
 import com.looker.droidify.datastore.SettingsRepository
@@ -17,21 +16,9 @@ class PrivacyRepository(
     fun getRBLogs(packageName: String): Flow<List<RBLog>> =
         Database.RBLogAdapter.getStream(packageName)
 
-    fun getLatestDownloadStats(packageName: String): Flow<Long> =
-        Database.DownloadStatsAdapter.totalStream(packageName)
-
     suspend fun upsertRBLogs(lastModified: Date, logs: List<RBLog>) {
         settingsRepo.setRbLogLastModified(lastModified)
         withContext(cc) { Database.RBLogAdapter.upsert(logs) }
-    }
-
-    suspend fun save(downloadStats: List<DownloadStats>) {
-        withContext(cc) { Database.DownloadStatsAdapter.insert(downloadStats) }
-    }
-
-    suspend fun clearDownloadStats() {
-        withContext(cc) { Database.DownloadStatsAdapter.deleteAll() }
-        settingsRepo.clearDownloadStatsLastModified()
     }
 
     suspend fun clearRbLogs() {

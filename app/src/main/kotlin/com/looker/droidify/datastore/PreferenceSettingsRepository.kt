@@ -148,13 +148,6 @@ class PreferenceSettingsRepository(
     override suspend fun setRbLogMirrorIndex(index: Int) =
         RB_MIRROR_INDEX.update(index)
 
-    override suspend fun updateLastModifiedDownloadStats(date: Date) {
-        dataStore.edit { pref ->
-            val currentValue = pref[LAST_MODIFIED_DS] ?: 0
-            if (date.time > currentValue) pref[LAST_MODIFIED_DS] = date.time
-        }
-    }
-
     override suspend fun setHomeScreenSwiping(value: Boolean) =
         HOME_SCREEN_SWIPING.update(value)
 
@@ -188,15 +181,6 @@ class PreferenceSettingsRepository(
 
     override suspend fun setDeleteApkOnInstall(enable: Boolean) =
         DELETE_APK_ON_INSTALL.update(enable)
-
-    override suspend fun setDownloadStatisticsEnabled(enabled: Boolean) =
-        DOWNLOAD_STATISTICS_ENABLED.update(enabled)
-
-    override suspend fun clearDownloadStatsLastModified() {
-        dataStore.edit { pref ->
-            pref.remove(LAST_MODIFIED_DS)
-        }
-    }
 
     override suspend fun setRBLogsEnabled(enabled: Boolean) =
         REPRODUCIBILITY_LOGS_ENABLED.update(enabled)
@@ -244,13 +228,11 @@ class PreferenceSettingsRepository(
         val lastCleanup = preferences[LAST_CLEAN_UP]?.let { Instant.fromEpochMilliseconds(it) }
         val lastRbLogFetch = preferences[LAST_RB_FETCH]
         val rbLogMirrorIndex = preferences[RB_MIRROR_INDEX] ?: 0
-        val lastModifiedDownloadStats = preferences[LAST_MODIFIED_DS]?.takeIf { it > 0L }
         val favouriteApps = preferences[FAVOURITE_APPS] ?: emptySet()
         val homeScreenSwiping = preferences[HOME_SCREEN_SWIPING] ?: true
         val enabledRepoIds =
             preferences[ENABLED_REPO_IDS]?.mapNotNull { it.toIntOrNull() }?.toSet() ?: emptySet()
         val deleteApkOnInstall = preferences[DELETE_APK_ON_INSTALL] ?: false
-        val downloadStatisticsEnabled = preferences[DOWNLOAD_STATISTICS_ENABLED] ?: true
         val reproducibilityLogsEnabled = preferences[REPRODUCIBILITY_LOGS_ENABLED] ?: true
 
         return Settings(
@@ -271,12 +253,10 @@ class PreferenceSettingsRepository(
             lastCleanup = lastCleanup,
             lastRbLogFetch = lastRbLogFetch,
             rbLogMirrorIndex = rbLogMirrorIndex,
-            lastModifiedDownloadStats = lastModifiedDownloadStats,
             favouriteApps = favouriteApps,
             homeScreenSwiping = homeScreenSwiping,
             enabledRepoIds = enabledRepoIds,
             deleteApkOnInstall = deleteApkOnInstall,
-            dlStatsEnabled = downloadStatisticsEnabled,
             rbLogsEnabled = reproducibilityLogsEnabled,
         )
     }
@@ -301,11 +281,9 @@ class PreferenceSettingsRepository(
         val LAST_CLEAN_UP = longPreferencesKey("key_last_clean_up_time")
         val LAST_RB_FETCH = longPreferencesKey("key_last_rb_logs_fetch_time")
         val RB_MIRROR_INDEX = intPreferencesKey("key_rb_logs_mirror_index")
-        val LAST_MODIFIED_DS = longPreferencesKey("key_last_modified_download_stats")
         val FAVOURITE_APPS = stringSetPreferencesKey("key_favourite_apps")
         val HOME_SCREEN_SWIPING = booleanPreferencesKey("key_home_swiping")
         val DELETE_APK_ON_INSTALL = booleanPreferencesKey("key_delete_apk_on_install")
-        val DOWNLOAD_STATISTICS_ENABLED = booleanPreferencesKey("key_download_statistics_enabled")
         val REPRODUCIBILITY_LOGS_ENABLED = booleanPreferencesKey("key_reproducibility_logs_enabled")
         val LEGACY_INSTALLER_COMPONENT_CLASS =
             stringPreferencesKey("key_legacy_installer_component_class")
@@ -364,12 +342,10 @@ class PreferenceSettingsRepository(
             settings.lastCleanup?.toEpochMilliseconds()?.let { set(LAST_CLEAN_UP, it) }
             settings.lastRbLogFetch?.let { set(LAST_RB_FETCH, it) }
             set(RB_MIRROR_INDEX, settings.rbLogMirrorIndex)
-            settings.lastModifiedDownloadStats?.let { set(LAST_MODIFIED_DS, it) }
             set(FAVOURITE_APPS, settings.favouriteApps)
             set(HOME_SCREEN_SWIPING, settings.homeScreenSwiping)
             set(ENABLED_REPO_IDS, settings.enabledRepoIds.map { it.toString() }.toSet())
             set(DELETE_APK_ON_INSTALL, settings.deleteApkOnInstall)
-            set(DOWNLOAD_STATISTICS_ENABLED, settings.dlStatsEnabled)
             set(REPRODUCIBILITY_LOGS_ENABLED, settings.rbLogsEnabled)
             return this.toPreferences()
         }

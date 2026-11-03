@@ -61,10 +61,9 @@ class AppDetailViewModel @Inject constructor(
             Database.RepositoryAdapter.getAllStream(),
             Database.InstalledAdapter.getStream(packageName),
             privacyRepository.getRBLogs(packageName),
-            privacyRepository.getLatestDownloadStats(packageName),
             repoAddress,
             settingsRepository.data,
-        ) { products, repositories, installedItem, rblogs, downloads, suggestedAddress, settings ->
+        ) { products, repositories, installedItem, rblogs, suggestedAddress, settings ->
             val idAndRepos = repositories.associateBy { it.id }
             val filteredProducts = products.filter { product ->
                 idAndRepos[product.repositoryId] != null
@@ -73,7 +72,6 @@ class AppDetailViewModel @Inject constructor(
                 products = filteredProducts,
                 repos = repositories,
                 rblogs = rblogs,
-                downloads = downloads,
                 installedItem = installedItem,
                 isFavourite = packageName in settings.favouriteApps,
                 allowIncompatibleVersions = settings.incompatibleVersions,
@@ -163,7 +161,6 @@ data class AppDetailUiState(
     val products: List<Product> = emptyList(),
     val repos: List<Repository> = emptyList(),
     val rblogs: List<RBLog> = emptyList(),
-    val downloads: Long = -1,
     val installedItem: InstalledItem? = null,
     val isSelf: Boolean = false,
     val isFavourite: Boolean = false,
