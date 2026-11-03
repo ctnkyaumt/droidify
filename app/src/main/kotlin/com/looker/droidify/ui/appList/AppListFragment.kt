@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.looker.droidify.database.CursorOwner
 import com.looker.droidify.databinding.RecyclerViewWithFabBinding
 import com.looker.droidify.model.ProductItem
+import com.looker.droidify.service.SyncService
 import com.looker.droidify.ui.tabsFragment.TabsFragment
 import com.looker.droidify.utility.common.Scroller
 import com.looker.droidify.utility.common.extension.dp
@@ -92,6 +93,12 @@ class AppListFragment() : Fragment(), CursorOwner.Callback {
             systemBarsPadding()
             RecyclerFastScroller(this)
         }
+        binding.swipeRefresh.setOnRefreshListener {
+            val parent = parentFragment as? TabsFragment
+            if (parent == null || !parent.syncRepositories()) {
+                binding.swipeRefresh.isRefreshing = false
+            }
+        }
         with(binding.updateAll) {
             if (source.updateAll) {
                 setOnClickListener { (parentFragment as? TabsFragment)?.updateAll() }
@@ -115,6 +122,13 @@ class AppListFragment() : Fragment(), CursorOwner.Callback {
         )
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    SyncService.syncState.collect { state ->
+                        if (state is SyncService.State.Finish) {
+                            binding.swipeRefresh.isRefreshing = false
+                        }
+                    }
+                }
                 launch {
                     viewModel.reposStream.collect { repos ->
                         appListAdapter.repositories = repos.associateBy { it.id }

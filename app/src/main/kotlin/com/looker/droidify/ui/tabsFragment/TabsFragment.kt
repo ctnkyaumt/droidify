@@ -212,7 +212,7 @@ class TabsFragment : ScreenFragment() {
                 .setIcon(toolbar.context.getMutatedIcon(R.drawable.ic_sync))
                 .setShowAsActionFlags(MenuItem.SHOW_AS_ACTION_ALWAYS)
                 .setOnMenuItemClickListener {
-                    syncConnection.binder?.sync(SyncService.SyncRequest.MANUAL)
+                    syncRepositories()
                     true
                 }
 
@@ -467,6 +467,15 @@ class TabsFragment : ScreenFragment() {
                 // should never be called
             }
         }
+    }
+
+    fun syncRepositories(): Boolean {
+        val binder = syncConnection.binder
+        if (binder != null) {
+            binder.sync(SyncService.SyncRequest.MANUAL)
+            return true
+        }
+        return false
     }
 
     internal fun selectUpdates() = selectUpdatesInternal(true)
