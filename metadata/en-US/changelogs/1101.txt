@@ -1,0 +1,4 @@
+Fixed:
+- GitHub sources: app icons are now read from the APK without downloading its whole resource table (Cromite: about 1 MB once instead of 28 MB); apps synced with 1.0.0 get their icons too
+- Adaptive icons from GitHub APKs are cropped to their visible area
+- "Updated X ago" in the versions list shows a real relative time
