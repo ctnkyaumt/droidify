@@ -40,12 +40,18 @@ class InstalledReleaseSelectorTest {
 
     private fun createRepo(id: Long, name: String) = Repository(
         id = id,
+        address = "https://example.com/repo$id",
+        mirrors = emptyList(),
         name = name,
         description = "",
-        address = "https://example.com/repo$id",
-        certificate = "",
         version = 1,
         enabled = true,
+        fingerprint = "",
+        lastModified = "",
+        entityTag = "",
+        updated = 0L,
+        timestamp = 0L,
+        authentication = "",
     )
 
     @Test

@@ -112,6 +112,22 @@ class ProductTest {
         assertFalse(product.compatible, "Product should not be compatible when all releases are incompatible")
     }
 
+    private fun createRepo(id: Long, name: String, address: String = "https://example.com/repo$id") = Repository(
+        id = id,
+        address = address,
+        mirrors = emptyList(),
+        name = name,
+        description = "",
+        version = 1,
+        enabled = true,
+        fingerprint = "",
+        lastModified = "",
+        entityTag = "",
+        updated = 0L,
+        timestamp = 0L,
+        authentication = "",
+    )
+
     @Test
     fun `findSuggested prefers repository with compatible signature over higher version with mismatch`() {
         val installed = InstalledItem(
@@ -123,30 +139,14 @@ class ProductTest {
         )
 
         // Repo 1: F-Droid (signed with sig_fdroid, higher versionCode 1000)
-        val fdroidRepo = Repository(
-            id = 1L,
-            address = "https://f-droid.org/repo",
-            name = "F-Droid",
-            description = "",
-            version = 1,
-            enabled = true,
-            deleted = false,
-        )
+        val fdroidRepo = createRepo(id = 1L, name = "F-Droid", address = "https://f-droid.org/repo")
         val fdroidProduct = createProduct(
             repositoryId = 1L,
             releases = listOf(createRelease(versionCode = 1000L, signature = "sig_fdroid")),
         )
 
         // Repo 2: NewPipe Archive (signed with sig_newpipe, lower versionCode 950)
-        val newpipeRepo = Repository(
-            id = 2L,
-            address = "https://archive.newpipe.net/fdroid/repo",
-            name = "NewPipe",
-            description = "",
-            version = 1,
-            enabled = true,
-            deleted = false,
-        )
+        val newpipeRepo = createRepo(id = 2L, name = "NewPipe", address = "https://archive.newpipe.net/fdroid/repo")
         val newpipeProduct = createProduct(
             repositoryId = 2L,
             releases = listOf(createRelease(versionCode = 950L, signature = "sig_newpipe")),
@@ -173,29 +173,13 @@ class ProductTest {
             signatures = listOf("sig_newpipe"),
         )
 
-        val repo1 = Repository(
-            id = 1L,
-            address = "https://repo1.org",
-            name = "Repo 1",
-            description = "",
-            version = 1,
-            enabled = true,
-            deleted = false,
-        )
+        val repo1 = createRepo(id = 1L, name = "Repo 1", address = "https://repo1.org")
         val product1 = createProduct(
             repositoryId = 1L,
             releases = listOf(createRelease(versionCode = 900L, signature = "sig_newpipe")),
         )
 
-        val repo2 = Repository(
-            id = 2L,
-            address = "https://repo2.org",
-            name = "Repo 2",
-            description = "",
-            version = 1,
-            enabled = true,
-            deleted = false,
-        )
+        val repo2 = createRepo(id = 2L, name = "Repo 2", address = "https://repo2.org")
         val product2 = createProduct(
             repositoryId = 2L,
             releases = listOf(createRelease(versionCode = 950L, signature = "sig_newpipe")),
