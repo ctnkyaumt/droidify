@@ -32,6 +32,10 @@ class LegacyInstaller(
     override suspend fun install(
         installItem: InstallItem,
     ): InstallState {
+        val releaseFile = Cache.getReleaseFile(context, installItem.installFileName)
+        if (!releaseFile.exists()) {
+            return InstallState.Failed
+        }
         val installFlag = if (SdkCheck.isNougat) Intent.FLAG_GRANT_READ_URI_PERMISSION else 0
         val fileUri = if (SdkCheck.isNougat) {
             Cache.getReleaseUri(context, installItem.installFileName)

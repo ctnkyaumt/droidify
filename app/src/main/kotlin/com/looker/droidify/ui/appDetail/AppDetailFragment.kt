@@ -399,7 +399,10 @@ class AppDetailFragment() : ScreenFragment(), AppDetailAdapter.Callbacks {
             this.downloading = isActive
             updateButtons()
         }
-        if (state.currentItem is DownloadService.State.Success && isResumed) {
+        if (state.currentItem is DownloadService.State.Success &&
+            state.currentItem.packageName == viewModel.packageName &&
+            isResumed
+        ) {
             viewModel.installPackage(
                 state.currentItem.packageName,
                 state.currentItem.release.cacheFileName,

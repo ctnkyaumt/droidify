@@ -124,7 +124,9 @@ class InstallManager(
                 if (result == InstallState.Installed && installer !is LegacyInstaller) {
                     if (deleteApkPreference.first()) {
                         val apkFile = Cache.getReleaseFile(context, item.installFileName)
-                        apkFile.delete()
+                        if (apkFile.exists()) {
+                            apkFile.delete()
+                        }
                     }
                 }
                 if (result == InstallState.Installed && SyncService.autoUpdating) {
