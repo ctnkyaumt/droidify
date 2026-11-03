@@ -9,7 +9,6 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import androidx.work.WorkManager
 import com.looker.droidify.datastore.model.AutoSync
-import com.looker.droidify.work.SyncWorker
 import kotlinx.coroutines.flow.combine
 import coil3.ImageLoader
 import coil3.PlatformContext
@@ -80,6 +79,7 @@ class Droidify : Application(), SingletonImageLoader.Factory, Configuration.Prov
 
         val databaseUpdated = Database.init(this)
         FailedUpdateTracker.init(this)
+        WorkManager.getInstance(applicationContext).cancelUniqueWork("SyncWorker")
         ProductPreferences.init(this, appScope)
         RepositoryUpdater.init(appScope, downloader)
         listenApplications()
@@ -158,13 +158,7 @@ class Droidify : Application(), SingletonImageLoader.Factory, Configuration.Prov
                 ) { syncMode, syncInterval ->
                     syncMode to syncInterval
                 }.collectIndexed { index, (syncMode, syncInterval) ->
-
                     SyncService.Job.schedule(applicationContext, index > 0, syncMode, syncInterval)
-                    if (syncMode == AutoSync.NEVER) {
-                        WorkManager.getInstance(applicationContext).cancelUniqueWork("SyncWorker")
-                    } else {
-                        SyncWorker.schedulePeriodicSync(applicationContext, syncInterval)
-                    }
                 }
             }
             launch {
